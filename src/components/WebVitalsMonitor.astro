@@ -1,0 +1,382 @@
+---
+/**
+ * Web Vitals Monitor Component
+ *
+ * Client-side monitoring of Core Web Vitals using the web-vitals library pattern.
+ * Displays real-time metrics in development mode.
+ *
+ * Part of T145: Audit and optimize Core Web Vitals
+ *
+ * @example
+ * <WebVitalsMonitor enabled={import.meta.env.DEV} />
+ */
+
+interface Props {
+  /**
+   * Enable monitoring (typically only in development)
+   */
+  enabled?: boolean;
+
+  /**
+   * Send metrics to analytics endpoint
+   */
+  sendToAnalytics?: boolean;
+
+  /**
+   * Analytics endpoint URL
+   */
+  analyticsEndpoint?: string;
+
+  /**
+   * Show visual indicator
+   */
+  showIndicator?: boolean;
+}
+
+const {
+  enabled = false,
+  sendToAnalytics = false,
+  analyticsEndpoint = '/api/analytics/web-vitals',
+  showIndicator = true,
+} = Astro.props;
+
+if (!enabled) {
+  return null;
+}
+---
+
+{enabled && (
+  <>
+    <!-- Visual Indicator -->
+    {showIndicator && (
+      <div id="web-vitals-indicator" class="fixed bottom-4 right-4 z-50 hidden">
+        <div class="bg-gray-900 text-white rounded-lg shadow-2xl p-4 max-w-sm">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold">⚡ Web Vitals</h3>
+            <button
+              id="vitals-close"
+              class="text-gray-400 hover:text-white transition-colors"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div class="space-y-2 text-xs">
+            <!-- LCP -->
+            <div class="flex items-center justify-between">
+              <span class="font-medium">LCP:</span>
+              <span id="lcp-value" class="font-mono">--</span>
+            </div>
+
+            <!-- FID -->
+            <div class="flex items-center justify-between">
+              <span class="font-medium">FID:</span>
+              <span id="fid-value" class="font-mono">--</span>
+            </div>
+
+            <!-- CLS -->
+            <div class="flex items-center justify-between">
+              <span class="font-medium">CLS:</span>
+              <span id="cls-value" class="font-mono">--</span>
+            </div>
+
+            <!-- FCP -->
+            <div class="flex items-center justify-between">
+              <span class="font-medium">FCP:</span>
+              <span id="fcp-value" class="font-mono">--</span>
+            </div>
+
+            <!-- TTFB -->
+            <div class="flex items-center justify-between">
+              <span class="font-medium">TTFB:</span>
+              <span id="ttfb-value" class="font-mono">--</span>
+            </div>
+
+            <!-- Score -->
+            <div class="flex items-center justify-between pt-2 border-t border-gray-700">
+              <span class="font-bold">Score:</span>
+              <span id="vitals-score" class="font-mono font-bold">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    <!-- Web Vitals Script -->
+    <script
+      define:vars={{ sendToAnalytics, analyticsEndpoint, showIndicator }}
+      is:inline
+    >
+      (function() {
+        // Web Vitals tracking
+        const vitalsData = {
+          lcp: null,
+          fid: null,
+          cls: null,
+          fcp: null,
+          ttfb: null,
+          inp: null
+        };
+
+        const thresholds = {
+          LCP: { good: 2500, poor: 4000 },
+          FID: { good: 100, poor: 300 },
+          CLS: { good: 0.1, poor: 0.25 },
+          FCP: { good: 1800, poor: 3000 },
+          TTFB: { good: 800, poor: 1800 },
+          INP: { good: 200, poor: 500 }
+        };
+
+        function getRating(name, value) {
+          const threshold = thresholds[name];
+          if (value <= threshold.good) return 'good';
+          if (value <= threshold.poor) return 'needs-improvement';
+          return 'poor';
+        }
+
+        function formatValue(name, value) {
+          if (name === 'CLS') return value.toFixed(3);
+          return Math.round(value) + 'ms';
+        }
+
+        function getRatingColor(rating) {
+          return {
+            good: '#0cce6b',
+            'needs-improvement': '#ffa400',
+            poor: '#ff4e42'
+          }[rating];
+        }
+
+        function updateDisplay(name, value) {
+          if (!showIndicator) return;
+
+          const indicator = document.getElementById('web-vitals-indicator');
+          if (indicator) {
+            indicator.classList.remove('hidden');
+          }
+
+          const element = document.getElementById(name.toLowerCase() + '-value');
+          if (element) {
+            const rating = getRating(name, value);
+            const color = getRatingColor(rating);
+            element.textContent = formatValue(name, value);
+            element.style.color = color;
+          }
+
+          updateScore();
+        }
+
+        function updateScore() {
+          const metrics = Object.values(vitalsData).filter(v => v !== null);
+          if (metrics.length === 0) return;
+
+          const scores = metrics.map(m => {
+            const rating = getRating(m.name, m.value);
+            return { good: 100, 'needs-improvement': 50, poor: 0 }[rating];
+          });
+
+          const avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+          const scoreElement = document.getElementById('vitals-score');
+          if (scoreElement) {
+            scoreElement.textContent = avgScore + '/100';
+            const rating = avgScore >= 80 ? 'good' : avgScore >= 50 ? 'needs-improvement' : 'poor';
+            scoreElement.style.color = getRatingColor(rating);
+          }
+        }
+
+        function sendToAnalytics_func(metric) {
+          if (!sendToAnalytics) return;
+
+          const body = {
+            name: metric.name,
+            value: metric.value,
+            rating: metric.rating,
+            delta: metric.delta,
+            id: metric.id,
+            navigationType: metric.navigationType,
+            url: window.location.href,
+            timestamp: Date.now()
+          };
+
+          // Send to analytics endpoint
+          if (navigator.sendBeacon) {
+            navigator.sendBeacon(analyticsEndpoint, JSON.stringify(body));
+          } else {
+            fetch(analyticsEndpoint, {
+              method: 'POST',
+              body: JSON.stringify(body),
+              headers: { 'Content-Type': 'application/json' },
+              keepalive: true
+            }).catch(console.error);
+          }
+        }
+
+        function onMetric(metric) {
+          const name = metric.name;
+          const value = metric.value;
+          const rating = getRating(name, value);
+
+          vitalsData[name.toLowerCase()] = {
+            name,
+            value,
+            rating,
+            delta: metric.delta,
+            id: metric.id
+          };
+
+          // Update display
+          updateDisplay(name, value);
+
+          // Send to analytics
+          sendToAnalytics_func({ ...vitalsData[name.toLowerCase()], navigationType: metric.navigationType });
+
+          // Log to console
+          console.log(`[Web Vitals] ${name}:`, {
+            value: formatValue(name, value),
+            rating,
+            threshold: `${thresholds[name].good}/${thresholds[name].poor}`
+          });
+        }
+
+        // Measure TTFB (available immediately)
+        function measureTTFB() {
+          const navigationEntry = performance.getEntriesByType('navigation')[0];
+          if (navigationEntry) {
+            const ttfb = navigationEntry.responseStart - navigationEntry.requestStart;
+            onMetric({
+              name: 'TTFB',
+              value: ttfb,
+              delta: ttfb,
+              id: 'v1-' + Date.now(),
+              navigationType: navigationEntry.type
+            });
+          }
+        }
+
+        // Measure FCP using PerformanceObserver
+        function measureFCP() {
+          const observer = new PerformanceObserver((list) => {
+            const entries = list.getEntries();
+            const fcpEntry = entries.find(entry => entry.name === 'first-contentful-paint');
+            if (fcpEntry) {
+              onMetric({
+                name: 'FCP',
+                value: fcpEntry.startTime,
+                delta: fcpEntry.startTime,
+                id: 'v1-' + Date.now(),
+                navigationType: 'navigate'
+              });
+              observer.disconnect();
+            }
+          });
+
+          observer.observe({ entryTypes: ['paint'] });
+        }
+
+        // Measure LCP using PerformanceObserver
+        function measureLCP() {
+          let lcpValue = 0;
+          const observer = new PerformanceObserver((list) => {
+            const entries = list.getEntries();
+            const lastEntry = entries[entries.length - 1];
+            lcpValue = lastEntry.startTime;
+          });
+
+          observer.observe({ entryTypes: ['largest-contentful-paint'] });
+
+          // Report final LCP when page lifecycle changes
+          ['pagehide', 'beforeunload'].forEach(event => {
+            addEventListener(event, () => {
+              if (lcpValue) {
+                onMetric({
+                  name: 'LCP',
+                  value: lcpValue,
+                  delta: lcpValue,
+                  id: 'v1-' + Date.now(),
+                  navigationType: 'navigate'
+                });
+              }
+              observer.disconnect();
+            }, { capture: true, once: true });
+          });
+        }
+
+        // Measure FID using PerformanceObserver
+        function measureFID() {
+          const observer = new PerformanceObserver((list) => {
+            const entries = list.getEntries();
+            const fidEntry = entries[0];
+            if (fidEntry) {
+              onMetric({
+                name: 'FID',
+                value: fidEntry.processingStart - fidEntry.startTime,
+                delta: fidEntry.processingStart - fidEntry.startTime,
+                id: 'v1-' + Date.now(),
+                navigationType: 'navigate'
+              });
+              observer.disconnect();
+            }
+          });
+
+          observer.observe({ entryTypes: ['first-input'] });
+        }
+
+        // Measure CLS using PerformanceObserver
+        function measureCLS() {
+          let clsValue = 0;
+          const observer = new PerformanceObserver((list) => {
+            const entries = list.getEntries();
+            entries.forEach(entry => {
+              if (!entry.hadRecentInput) {
+                clsValue += entry.value;
+              }
+            });
+          });
+
+          observer.observe({ entryTypes: ['layout-shift'] });
+
+          // Report final CLS when page lifecycle changes
+          ['pagehide', 'beforeunload'].forEach(event => {
+            addEventListener(event, () => {
+              if (clsValue > 0) {
+                onMetric({
+                  name: 'CLS',
+                  value: clsValue,
+                  delta: clsValue,
+                  id: 'v1-' + Date.now(),
+                  navigationType: 'navigate'
+                });
+              }
+              observer.disconnect();
+            }, { capture: true, once: true });
+          });
+        }
+
+        // Initialize measurements
+        if (typeof PerformanceObserver !== 'undefined') {
+          measureTTFB();
+          measureFCP();
+          measureLCP();
+          measureFID();
+          measureCLS();
+        }
+
+        // Close button handler
+        if (showIndicator) {
+          document.addEventListener('DOMContentLoaded', () => {
+            const closeBtn = document.getElementById('vitals-close');
+            if (closeBtn) {
+              closeBtn.addEventListener('click', () => {
+                const indicator = document.getElementById('web-vitals-indicator');
+                if (indicator) {
+                  indicator.classList.add('hidden');
+                }
+              });
+            }
+          });
+        }
+      })();
+    </script>
+  </>
+)}

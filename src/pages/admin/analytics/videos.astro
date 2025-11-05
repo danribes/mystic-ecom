@@ -1,0 +1,281 @@
+---
+/**
+ * Admin Video Analytics Dashboard (T190)
+ *
+ * Displays comprehensive video analytics:
+ * - Overall statistics
+ * - Popular videos
+ * - Course-wise breakdown
+ * - Video engagement heatmaps
+ */
+
+import { getAnalyticsDashboardStats, getPopularVideos, getCourseVideoAnalytics } from '@/lib/analytics/videos';
+import { getAllCourses } from '@/lib/courses';
+import { checkAdminAuth } from '@/lib/adminAuth';
+
+// Check admin authentication
+const authResult = await checkAdminAuth(Astro);
+if (!authResult.isAuthenticated) {
+  return Astro.redirect('/admin/login');
+}
+
+// Fetch analytics data
+const dashboardStats = await getAnalyticsDashboardStats();
+const popularVideos = await getPopularVideos(10);
+const courses = await getAllCourses();
+
+// Helper function to format duration
+function formatDuration(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  return `${minutes}m`;
+}
+
+// Helper function to format large numbers
+function formatNumber(num: number): string {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M';
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K';
+  }
+  return num.toString();
+}
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Analytics - Admin Dashboard</title>
+</head>
+<body class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <header class="bg-white shadow">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div class="flex justify-between items-center">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Video Analytics</h1>
+          <p class="text-sm text-gray-600 mt-1">Track video engagement, views, and completion rates</p>
+        </div>
+        <div class="flex gap-3">
+          <a href="/admin" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+            Back to Admin
+          </a>
+          <button id="refresh-analytics" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+            Refresh Data
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Overall Statistics -->
+    <div class="mb-8">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Overall Statistics</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Total Videos -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600">Total Videos</p>
+              <p class="text-2xl font-bold text-gray-900 mt-1">{dashboardStats.total_videos_with_analytics}</p>
+            </div>
+            <div class="p-3 bg-blue-100 rounded-full">
+              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Total Views -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600">Total Views</p>
+              <p class="text-2xl font-bold text-gray-900 mt-1">{formatNumber(dashboardStats.total_views)}</p>
+            </div>
+            <div class="p-3 bg-green-100 rounded-full">
+              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Unique Viewers -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600">Unique Viewers</p>
+              <p class="text-2xl font-bold text-gray-900 mt-1">{formatNumber(dashboardStats.total_unique_viewers)}</p>
+            </div>
+            <div class="p-3 bg-purple-100 rounded-full">
+              <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Avg Completion Rate -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600">Avg Completion</p>
+              <p class="text-2xl font-bold text-gray-900 mt-1">{dashboardStats.average_completion_rate.toFixed(1)}%</p>
+            </div>
+            <div class="p-3 bg-yellow-100 rounded-full">
+              <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Total Watch Time -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600">Total Watch Time</p>
+              <p class="text-2xl font-bold text-gray-900 mt-1">{formatNumber(Math.floor(dashboardStats.total_watch_time_hours))}h</p>
+            </div>
+            <div class="p-3 bg-red-100 rounded-full">
+              <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- High Completion Videos -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600">High Completion (>75%)</p>
+              <p class="text-2xl font-bold text-green-600 mt-1">{dashboardStats.videos_by_completion_rate.high}</p>
+            </div>
+            <div class="text-sm text-gray-500">
+              M: {dashboardStats.videos_by_completion_rate.medium} | L: {dashboardStats.videos_by_completion_rate.low}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Popular Videos -->
+    <div class="mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-semibold text-gray-900">Top 10 Popular Videos</h2>
+        <p class="text-sm text-gray-600">Ranked by total views</p>
+      </div>
+      <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Video</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Views</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unique Viewers</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Watch Time</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {popularVideos.length === 0 ? (
+              <tr>
+                <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
+                  No video analytics data available yet. Videos will appear here once users start watching.
+                </td>
+              </tr>
+            ) : (
+              popularVideos.map((video, index) => (
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{index + 1}</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">{video.video_title}</div>
+                    <div class="text-sm text-gray-500">{video.video_id.substring(0, 8)}...</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">{video.course_title}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatNumber(video.total_views)}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatNumber(video.unique_viewers)}</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                        <div class="bg-green-600 h-2 rounded-full" style={`width: ${video.completion_rate}%`}></div>
+                      </div>
+                      <span class="text-sm text-gray-900">{video.completion_rate.toFixed(1)}%</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDuration(video.avg_watch_time_seconds)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Course Breakdown -->
+    <div class="mb-8">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Video Analytics by Course</h2>
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="space-y-4">
+          {courses.map(course => (
+            <div class="border-b border-gray-200 pb-4 last:border-0">
+              <div class="flex justify-between items-start mb-2">
+                <div>
+                  <h3 class="font-medium text-gray-900">{course.title}</h3>
+                  <p class="text-sm text-gray-500">{course.id}</p>
+                </div>
+                <a
+                  href={`/admin/analytics/videos/course/${course.id}`}
+                  class="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  View Details →
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Refresh analytics button
+    document.getElementById('refresh-analytics')?.addEventListener('click', async () => {
+      const button = document.getElementById('refresh-analytics');
+      if (!button) return;
+
+      button.textContent = 'Refreshing...';
+      button.setAttribute('disabled', 'true');
+
+      try {
+        const response = await fetch('/api/admin/analytics/videos?refresh=true');
+        if (response.ok) {
+          window.location.reload();
+        } else {
+          alert('Failed to refresh analytics');
+        }
+      } catch (error) {
+        console.error('Error refreshing analytics:', error);
+        alert('Error refreshing analytics');
+      } finally {
+        button.textContent = 'Refresh Data';
+        button.removeAttribute('disabled');
+      }
+    });
+  </script>
+</body>
+</html>

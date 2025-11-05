@@ -9,6 +9,7 @@ CREATE TYPE user_role AS ENUM ('user', 'admin');
 CREATE TYPE order_status AS ENUM ('pending', 'completed', 'cancelled', 'refunded');
 CREATE TYPE booking_status AS ENUM ('pending', 'confirmed', 'cancelled', 'attended');
 CREATE TYPE product_type AS ENUM ('pdf', 'audio', 'video', 'ebook');
+CREATE TYPE video_status AS ENUM ('queued', 'inprogress', 'ready', 'error');
 
 -- Users table
 CREATE TABLE users (
@@ -26,6 +27,27 @@ CREATE TABLE users (
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_deleted_at ON users(deleted_at);
+
+-- Password Reset Tokens table (T203)
+CREATE TABLE password_reset_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    used BOOLEAN DEFAULT false NOT NULL,
+    used_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    CONSTRAINT unique_token UNIQUE (token),
+    CONSTRAINT used_at_check CHECK (
+        (used = false AND used_at IS NULL) OR
+        (used = true AND used_at IS NOT NULL)
+    )
+);
+
+CREATE INDEX idx_password_reset_tokens_token ON password_reset_tokens(token);
+CREATE INDEX idx_password_reset_tokens_user_id ON password_reset_tokens(user_id);
+CREATE INDEX idx_password_reset_tokens_created_at ON password_reset_tokens(created_at);
+CREATE INDEX idx_password_reset_tokens_used ON password_reset_tokens(used) WHERE used = false;
 
 -- Courses table
 CREATE TABLE courses (
@@ -46,6 +68,11 @@ CREATE TABLE courses (
     learning_outcomes_es TEXT[],
     prerequisites_es TEXT[],
     curriculum_es JSONB,
+    -- Video content (T182)
+    preview_video_url VARCHAR(500),
+    preview_video_id VARCHAR(255),
+    preview_video_thumbnail VARCHAR(500),
+    preview_video_duration INTEGER,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
@@ -54,6 +81,35 @@ CREATE TABLE courses (
 CREATE INDEX idx_courses_slug ON courses(slug);
 CREATE INDEX idx_courses_published ON courses(is_published);
 CREATE INDEX idx_courses_deleted_at ON courses(deleted_at);
+CREATE INDEX idx_courses_preview_video_id ON courses(preview_video_id);
+
+-- Course Videos table (T182)
+CREATE TABLE course_videos (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    lesson_id VARCHAR(255) NOT NULL,
+    cloudflare_video_id VARCHAR(255) NOT NULL UNIQUE,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    duration INTEGER,
+    thumbnail_url VARCHAR(500),
+    status video_status DEFAULT 'queued',
+    playback_hls_url VARCHAR(500),
+    playback_dash_url VARCHAR(500),
+    processing_progress INTEGER DEFAULT 0,
+    error_message TEXT,
+    metadata JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT check_progress CHECK (processing_progress >= 0 AND processing_progress <= 100),
+    CONSTRAINT unique_course_lesson UNIQUE(course_id, lesson_id)
+);
+
+CREATE INDEX idx_course_videos_course_id ON course_videos(course_id);
+CREATE INDEX idx_course_videos_lesson_id ON course_videos(lesson_id);
+CREATE INDEX idx_course_videos_cloudflare_id ON course_videos(cloudflare_video_id);
+CREATE INDEX idx_course_videos_status ON course_videos(status);
+CREATE INDEX idx_course_videos_created_at ON course_videos(created_at);
 
 -- Digital Products table
 CREATE TABLE digital_products (
@@ -117,9 +173,11 @@ CREATE INDEX idx_events_city ON events(venue_city);
 CREATE INDEX idx_events_published ON events(is_published);
 
 -- Orders table
+-- SECURITY FIX (T197): Changed ON DELETE CASCADE to RESTRICT
+-- Financial records MUST be preserved - cannot delete users with orders
 CREATE TABLE orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     stripe_payment_intent_id VARCHAR(255) UNIQUE,
     status order_status DEFAULT 'pending',
     total_amount DECIMAL(10, 2) NOT NULL,
@@ -154,9 +212,11 @@ CREATE INDEX idx_order_items_course_id ON order_items(course_id);
 CREATE INDEX idx_order_items_product_id ON order_items(digital_product_id);
 
 -- Bookings table (for events)
+-- SECURITY FIX (T197): Changed ON DELETE CASCADE to RESTRICT for user_id
+-- Booking records (especially paid ones) must be preserved
 CREATE TABLE bookings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
     status booking_status DEFAULT 'pending',
@@ -253,9 +313,11 @@ CREATE INDEX idx_lesson_progress_completed ON lesson_progress(completed);
 CREATE INDEX idx_lesson_progress_completed_at ON lesson_progress(completed_at) WHERE completed_at IS NOT NULL;
 
 -- Download Tracking table
+-- SECURITY FIX (T197): Changed user_id to SET NULL for audit trail preservation
+-- Download logs important for compliance and abuse detection
 CREATE TABLE download_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     digital_product_id UUID NOT NULL REFERENCES digital_products(id) ON DELETE CASCADE,
     order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
     ip_address VARCHAR(45),
@@ -302,6 +364,9 @@ CREATE TRIGGER update_course_progress_updated_at BEFORE UPDATE ON course_progres
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_lesson_progress_updated_at BEFORE UPDATE ON lesson_progress
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_course_videos_updated_at BEFORE UPDATE ON course_videos
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Create view for course statistics

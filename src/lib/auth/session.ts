@@ -1,20 +1,25 @@
 /**
- * Session Management
- * 
+ * Session Management (T210: Enhanced Cookie Security)
+ *
  * Redis-based session handling for user authentication.
  * Sessions are stored in Redis with configurable TTL.
+ *
+ * Security improvements (T210):
+ * - Uses centralized cookie configuration
+ * - Multiple production environment checks
+ * - Always secure cookies in production
+ * - Strict SameSite for admin sessions
  */
 
 import { randomBytes } from 'crypto';
 import type { AstroCookies } from 'astro';
 import { getJSON, setJSON, del, expire, ttl } from '@/lib/redis';
+import { getSessionCookieOptions, validateCookieSecurity } from '@/lib/cookieConfig';
 
 // Session configuration
 const SESSION_PREFIX = 'session:';
 const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || 'sid';
 const SESSION_TTL = parseInt(process.env.SESSION_TTL || '86400', 10); // 24 hours default
-const SESSION_COOKIE_SECURE = process.env.NODE_ENV === 'production';
-const SESSION_COOKIE_SAME_SITE: 'strict' | 'lax' | 'none' = 'lax';
 
 /**
  * User session data structure
@@ -139,22 +144,25 @@ export async function getSessionTTL(sessionId: string): Promise<number> {
 }
 
 /**
- * Set session cookie in response
- * 
+ * Set session cookie in response (T210: Enhanced Security)
+ *
  * @param cookies - Astro cookies object
  * @param sessionId - Session ID to store
+ * @param isAdminSession - Whether this is an admin session (uses stricter settings)
  */
 export function setSessionCookie(
   cookies: AstroCookies,
-  sessionId: string
+  sessionId: string,
+  isAdminSession: boolean = false
 ): void {
-  cookies.set(SESSION_COOKIE_NAME, sessionId, {
-    httpOnly: true,
-    secure: SESSION_COOKIE_SECURE,
-    sameSite: SESSION_COOKIE_SAME_SITE,
-    maxAge: SESSION_TTL,
-    path: '/',
-  });
+  // Get secure cookie options based on session type
+  const options = getSessionCookieOptions(SESSION_TTL, isAdminSession);
+
+  // Validate security in production
+  validateCookieSecurity(options);
+
+  // Set the cookie with secure options
+  cookies.set(SESSION_COOKIE_NAME, sessionId, options);
 }
 
 /**
@@ -195,8 +203,8 @@ export async function getSessionFromRequest(
 }
 
 /**
- * Login helper - creates session and sets cookie
- * 
+ * Login helper - creates session and sets cookie (T210: Enhanced Security)
+ *
  * @param cookies - Astro cookies object
  * @param userId - User ID
  * @param email - User email
@@ -212,7 +220,10 @@ export async function login(
   role: 'admin' | 'user'
 ): Promise<SessionData> {
   const sessionId = await createSession(userId, email, name, role);
-  setSessionCookie(cookies, sessionId);
+
+  // Admin sessions use stricter cookie settings (SameSite=strict)
+  const isAdminSession = role === 'admin';
+  setSessionCookie(cookies, sessionId, isAdminSession);
 
   return {
     userId,

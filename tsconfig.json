@@ -20,6 +20,20 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
-    "allowJs": true
+    "allowJs": true,
+
+    // T209: Enhanced type safety settings
+    "strict": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "noImplicitAny": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": false,  // Disable to avoid too many warnings during development
+    "noUnusedParameters": false,  // Disable to avoid too many warnings during development
+    "noPropertyAccessFromIndexSignature": false,  // Too strict for database results
+    "useUnknownInCatchVariables": true  // Catch variables default to unknown instead of any
   }
 }

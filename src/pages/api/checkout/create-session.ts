@@ -1,27 +1,78 @@
 /**
  * POST /api/checkout/create-session
- * 
+ *
  * Create a Stripe Checkout Session for the current cart
- * 
+ *
  * Flow:
  * 1. Get user's cart from Redis
  * 2. Validate cart has items
  * 3. Create a pending order in database
  * 4. Create Stripe checkout session with order ID
  * 5. Return session ID to client for redirect
- * 
+ *
  * The webhook handler (T047) will complete the order after payment
+ *
+ * Security: T199 - Rate limited to 10 requests per minute per IP
  */
 
 import type { APIRoute } from 'astro';
 import { getCart } from '@/services/cart.service';
 import { createCheckoutSession } from '@/lib/stripe';
 import { getPool } from '@/lib/db';
-import type { OrderItemType } from '@/types';
+import { rateLimit, RateLimitProfiles } from '@/lib/ratelimit';
+import { validateCSRF } from '@/lib/csrf';
 
-export const POST: APIRoute = async ({ request, cookies }) => {
+export const POST: APIRoute = async (context) => {
+  const { request, cookies } = context;
   const pool = getPool();
-  
+
+  // T201: CSRF protection - validate token
+  const csrfValid = await validateCSRF(context);
+  if (!csrfValid) {
+    console.warn('[CHECKOUT] CSRF validation failed:', {
+      ip: context.clientAddress,
+    });
+
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: 'CSRF validation failed',
+        code: 'CSRF_TOKEN_INVALID',
+      }),
+      {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+
+  // Rate limiting: 10 requests per minute (prevents payment abuse)
+  const rateLimitResult = await rateLimit(context, RateLimitProfiles.CHECKOUT);
+  if (!rateLimitResult.allowed) {
+    const retryAfter = rateLimitResult.resetAt - Math.floor(Date.now() / 1000);
+    console.warn('[CHECKOUT] Rate limit exceeded:', {
+      ip: context.clientAddress,
+      resetAt: new Date(rateLimitResult.resetAt * 1000).toISOString(),
+    });
+
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: 'Too many checkout attempts. Please try again later.',
+        code: 'RATE_LIMIT_EXCEEDED',
+        resetAt: rateLimitResult.resetAt,
+        retryAfter: retryAfter,
+      }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': String(retryAfter > 0 ? retryAfter : 1),
+        },
+      }
+    );
+  }
+
   try {
     // Get user ID from session cookie
     const sessionId = cookies.get('session_id')?.value;

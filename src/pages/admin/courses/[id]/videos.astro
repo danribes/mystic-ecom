@@ -1,0 +1,709 @@
+---
+/**
+ * T188: Video Management Page
+ *
+ * Admin interface for managing course videos.
+ * Features: list, edit, delete, reorder, filter/search videos.
+ *
+ * Route: /admin/courses/{courseId}/videos
+ */
+
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import { checkAdminAuth } from '@/lib/auth/admin';
+import { getPool } from '@/lib/db';
+import { getCourseVideos } from '@/lib/videos';
+import type { CourseVideo } from '@/lib/videos';
+
+// Check admin authentication
+const authResult = await checkAdminAuth(Astro.cookies);
+if (!authResult.user) {
+  return Astro.redirect('/admin/login');
+}
+
+// Get course ID from URL
+const { id: courseId } = Astro.params;
+
+if (!courseId) {
+  return Astro.redirect('/admin/courses');
+}
+
+// Load course data
+let course: any = null;
+let videos: CourseVideo[] = [];
+let error: string | null = null;
+
+try {
+  const pool = getPool();
+
+  // Fetch course
+  const courseResult = await pool.query(
+    `SELECT id, title, slug, description FROM courses WHERE id = $1 OR slug = $1`,
+    [courseId]
+  );
+
+  if (courseResult.rows.length === 0) {
+    error = 'Course not found';
+  } else {
+    course = courseResult.rows[0];
+
+    // Fetch all videos for this course
+    videos = await getCourseVideos(course.id);
+  }
+} catch (err) {
+  console.error('Error loading videos:', err);
+  error = 'Failed to load videos';
+}
+
+// Helper: Format duration
+const formatDuration = (seconds: number | null): string => {
+  if (!seconds) return '--:--';
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+  return `${minutes}:${secs.toString().padStart(2, '0')}`;
+};
+
+// Helper: Format date
+const formatDate = (date: Date | string | null): string => {
+  if (!date) return 'Unknown';
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+};
+
+// Helper: Get status badge color
+const getStatusColor = (status: string): string => {
+  const colors: Record<string, string> = {
+    ready: 'bg-success text-white',
+    queued: 'bg-warning text-white',
+    inprogress: 'bg-primary text-white',
+    error: 'bg-error text-white',
+  };
+  return colors[status] || 'bg-gray-500 text-white';
+};
+---
+
+<AdminLayout title={course ? `Manage Videos - ${course.title}` : 'Manage Videos'}>
+  <div class="video-management-page">
+    <!-- Page Header -->
+    <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <div class="mb-2 flex items-center gap-2 text-sm text-text-light">
+          <a href="/admin/courses" class="hover:text-primary transition-colors">Courses</a>
+          <span>/</span>
+          {course && (
+            <>
+              <a href={`/admin/courses/${course.slug || course.id}`} class="hover:text-primary transition-colors">
+                {course.title}
+              </a>
+              <span>/</span>
+              <span class="text-text">Videos</span>
+            </>
+          )}
+        </div>
+        <h1 class="text-3xl font-bold text-text">
+          {course ? `Videos for ${course.title}` : 'Course Videos'}
+        </h1>
+        <p class="mt-1 text-sm text-text-light">
+          {videos.length} {videos.length === 1 ? 'video' : 'videos'} total
+        </p>
+      </div>
+
+      <!-- Upload Button -->
+      {course && (
+        <a
+          href={`/admin/courses/${course.slug || course.id}/videos/upload`}
+          class="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-semibold text-white transition-all hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+        >
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Upload New Video
+        </a>
+      )}
+    </div>
+
+    {error ? (
+      <div class="rounded-lg border border-error bg-error/10 p-4 text-error">
+        <p class="font-medium">{error}</p>
+      </div>
+    ) : (
+      <>
+        <!-- Filters and Search -->
+        <div class="mb-6 flex flex-col gap-4 sm:flex-row">
+          <!-- Search -->
+          <div class="flex-1">
+            <div class="relative">
+              <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                <svg class="h-5 w-5 text-text-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                id="search-input"
+                placeholder="Search videos by title or lesson..."
+                class="w-full rounded-lg border border-border bg-white py-2 pl-10 pr-4 text-text placeholder-text-light focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+          </div>
+
+          <!-- Status Filter -->
+          <select
+            id="status-filter"
+            class="rounded-lg border border-border bg-white px-4 py-2 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="">All Statuses</option>
+            <option value="ready">Ready</option>
+            <option value="inprogress">Processing</option>
+            <option value="queued">Queued</option>
+            <option value="error">Error</option>
+          </select>
+        </div>
+
+        {videos.length === 0 ? (
+          <div class="rounded-lg border-2 border-dashed border-border bg-surface p-12 text-center">
+            <svg class="mx-auto h-16 w-16 text-text-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <h3 class="mt-4 text-lg font-semibold text-text">No videos yet</h3>
+            <p class="mt-2 text-sm text-text-light">
+              Get started by uploading your first video
+            </p>
+            {course && (
+              <a
+                href={`/admin/courses/${course.slug || course.id}/videos/upload`}
+                class="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-semibold text-white transition-all hover:bg-primary-dark"
+              >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Upload Video
+              </a>
+            )}
+          </div>
+        ) : (
+          <!-- Videos Table -->
+          <div class="overflow-hidden rounded-lg border border-border bg-white shadow-sm">
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead class="bg-surface text-left text-sm font-semibold text-text">
+                  <tr>
+                    <th class="px-6 py-4">Video</th>
+                    <th class="px-6 py-4">Lesson</th>
+                    <th class="px-6 py-4">Duration</th>
+                    <th class="px-6 py-4">Status</th>
+                    <th class="px-6 py-4">Upload Date</th>
+                    <th class="px-6 py-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                  {videos.map((video) => (
+                    <tr class="video-row transition-colors hover:bg-surface/50" data-video-id={video.id}>
+                      <!-- Video Info -->
+                      <td class="px-6 py-4">
+                        <div class="flex items-center gap-4">
+                          <!-- Thumbnail -->
+                          <div class="h-16 w-24 flex-shrink-0 overflow-hidden rounded bg-gray-900">
+                            {video.thumbnail_url ? (
+                              <img
+                                src={video.thumbnail_url}
+                                alt={video.title}
+                                class="h-full w-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div class="flex h-full w-full items-center justify-center">
+                                <svg class="h-8 w-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+
+                          <!-- Title & Description -->
+                          <div class="min-w-0 flex-1">
+                            <div class="video-title-display">
+                              <h3 class="truncate font-medium text-text">{video.title}</h3>
+                              {video.description && (
+                                <p class="mt-1 line-clamp-2 text-sm text-text-light">{video.description}</p>
+                              )}
+                            </div>
+
+                            <!-- Edit Form (Hidden by default) -->
+                            <div class="video-edit-form hidden">
+                              <input
+                                type="text"
+                                class="edit-title-input mb-2 w-full rounded border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                value={video.title}
+                                data-original={video.title}
+                              />
+                              <textarea
+                                class="edit-description-input w-full rounded border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                rows="2"
+                                data-original={video.description || ''}
+                              >{video.description || ''}</textarea>
+                              <div class="mt-2 flex gap-2">
+                                <button
+                                  class="save-edit-btn rounded bg-primary px-4 py-1.5 text-sm font-medium text-white hover:bg-primary-dark"
+                                  data-video-id={video.id}
+                                >
+                                  Save
+                                </button>
+                                <button class="cancel-edit-btn rounded border border-border px-4 py-1.5 text-sm font-medium text-text hover:bg-surface">
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <!-- Lesson ID -->
+                      <td class="px-6 py-4">
+                        <span class="rounded-full bg-surface px-3 py-1 text-sm text-text">
+                          {video.lesson_id}
+                        </span>
+                      </td>
+
+                      <!-- Duration -->
+                      <td class="px-6 py-4 text-sm text-text-light">
+                        {formatDuration(video.duration)}
+                      </td>
+
+                      <!-- Status -->
+                      <td class="px-6 py-4">
+                        <span class={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(video.status)}`}>
+                          {video.status === 'ready' && (
+                            <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                          )}
+                          {video.status === 'inprogress' && (
+                            <svg class="h-3 w-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          )}
+                          {video.status === 'queued' && '⏳'}
+                          {video.status === 'error' && '⚠️'}
+                          <span class="capitalize">{video.status}</span>
+                        </span>
+                        {video.status === 'inprogress' && video.processing_progress !== null && (
+                          <div class="mt-1 text-xs text-text-light">{video.processing_progress}%</div>
+                        )}
+                      </td>
+
+                      <!-- Upload Date -->
+                      <td class="px-6 py-4 text-sm text-text-light">
+                        {formatDate(video.created_at)}
+                      </td>
+
+                      <!-- Actions -->
+                      <td class="px-6 py-4">
+                        <div class="flex items-center justify-end gap-2">
+                          <!-- Edit Button -->
+                          <button
+                            class="edit-video-btn rounded-lg p-2 text-text-light transition-colors hover:bg-surface hover:text-primary"
+                            title="Edit video"
+                            data-video-id={video.id}
+                          >
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+
+                          <!-- View Button -->
+                          {video.status === 'ready' && course && (
+                            <a
+                              href={`/courses/${course.slug || course.id}/lessons/${video.lesson_id}`}
+                              target="_blank"
+                              class="rounded-lg p-2 text-text-light transition-colors hover:bg-surface hover:text-primary"
+                              title="View lesson"
+                            >
+                              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            </a>
+                          )}
+
+                          <!-- Delete Button -->
+                          <button
+                            class="delete-video-btn rounded-lg p-2 text-text-light transition-colors hover:bg-error/10 hover:text-error"
+                            title="Delete video"
+                            data-video-id={video.id}
+                            data-video-title={video.title}
+                          >
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </>
+    )}
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="delete-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+      <div class="mb-4 flex items-start gap-4">
+        <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-error/10">
+          <svg class="h-6 w-6 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <div class="flex-1">
+          <h3 class="text-lg font-semibold text-text">Delete Video</h3>
+          <p class="mt-2 text-sm text-text-light">
+            Are you sure you want to delete "<span id="delete-video-title" class="font-medium text-text"></span>"?
+            This action cannot be undone.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button
+          id="confirm-delete-btn"
+          class="flex-1 rounded-lg bg-error px-4 py-2 font-semibold text-white transition-colors hover:bg-error/90"
+        >
+          Delete
+        </button>
+        <button
+          id="cancel-delete-btn"
+          class="flex-1 rounded-lg border border-border px-4 py-2 font-semibold text-text transition-colors hover:bg-surface"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
+
+<script>
+/**
+ * Video Management Client-Side Logic
+ */
+
+// Store current video for deletion
+let videoToDelete: { id: string; title: string } | null = null;
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+  // Search functionality
+  const searchInput = document.getElementById('search-input') as HTMLInputElement;
+  if (searchInput) {
+    searchInput.addEventListener('input', handleSearch);
+  }
+
+  // Status filter
+  const statusFilter = document.getElementById('status-filter') as HTMLSelectElement;
+  if (statusFilter) {
+    statusFilter.addEventListener('change', handleFilter);
+  }
+
+  // Edit buttons
+  document.querySelectorAll('.edit-video-btn').forEach((btn) => {
+    btn.addEventListener('click', handleEditClick);
+  });
+
+  // Cancel edit buttons
+  document.querySelectorAll('.cancel-edit-btn').forEach((btn) => {
+    btn.addEventListener('click', handleCancelEdit);
+  });
+
+  // Save edit buttons
+  document.querySelectorAll('.save-edit-btn').forEach((btn) => {
+    btn.addEventListener('click', handleSaveEdit);
+  });
+
+  // Delete buttons
+  document.querySelectorAll('.delete-video-btn').forEach((btn) => {
+    btn.addEventListener('click', handleDeleteClick);
+  });
+
+  // Delete modal buttons
+  const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+  if (confirmDeleteBtn) {
+    confirmDeleteBtn.addEventListener('click', handleConfirmDelete);
+  }
+
+  const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+  if (cancelDeleteBtn) {
+    cancelDeleteBtn.addEventListener('click', hideDeleteModal);
+  }
+
+  // Close modal on background click
+  const deleteModal = document.getElementById('delete-modal');
+  if (deleteModal) {
+    deleteModal.addEventListener('click', (e) => {
+      if (e.target === deleteModal) {
+        hideDeleteModal();
+      }
+    });
+  }
+});
+
+// Search functionality
+function handleSearch(e: Event) {
+  const searchTerm = (e.target as HTMLInputElement).value.toLowerCase();
+  const rows = document.querySelectorAll('.video-row');
+
+  rows.forEach((row) => {
+    const title = row.querySelector('.video-title-display h3')?.textContent?.toLowerCase() || '';
+    const lessonId = row.querySelector('td:nth-child(2)')?.textContent?.toLowerCase() || '';
+
+    if (title.includes(searchTerm) || lessonId.includes(searchTerm)) {
+      (row as HTMLElement).style.display = '';
+    } else {
+      (row as HTMLElement).style.display = 'none';
+    }
+  });
+}
+
+// Filter by status
+function handleFilter(e: Event) {
+  const statusFilter = (e.target as HTMLSelectElement).value;
+  const rows = document.querySelectorAll('.video-row');
+
+  rows.forEach((row) => {
+    const statusBadge = row.querySelector('[class*="capitalize"]')?.textContent?.toLowerCase();
+
+    if (!statusFilter || statusBadge === statusFilter) {
+      (row as HTMLElement).style.display = '';
+    } else {
+      (row as HTMLElement).style.display = 'none';
+    }
+  });
+}
+
+// Edit video
+function handleEditClick(e: Event) {
+  const btn = e.currentTarget as HTMLButtonElement;
+  const row = btn.closest('.video-row');
+  if (!row) return;
+
+  const displayDiv = row.querySelector('.video-title-display');
+  const editForm = row.querySelector('.video-edit-form');
+
+  if (displayDiv && editForm) {
+    displayDiv.classList.add('hidden');
+    editForm.classList.remove('hidden');
+  }
+}
+
+// Cancel edit
+function handleCancelEdit(e: Event) {
+  const btn = e.currentTarget as HTMLButtonElement;
+  const row = btn.closest('.video-row');
+  if (!row) return;
+
+  const displayDiv = row.querySelector('.video-title-display');
+  const editForm = row.querySelector('.video-edit-form');
+  const titleInput = row.querySelector('.edit-title-input') as HTMLInputElement;
+  const descInput = row.querySelector('.edit-description-input') as HTMLTextAreaElement;
+
+  // Reset to original values
+  if (titleInput) {
+    titleInput.value = titleInput.dataset.original || '';
+  }
+  if (descInput) {
+    descInput.value = descInput.dataset.original || '';
+  }
+
+  if (displayDiv && editForm) {
+    editForm.classList.add('hidden');
+    displayDiv.classList.remove('hidden');
+  }
+}
+
+// Save edit
+async function handleSaveEdit(e: Event) {
+  const btn = e.currentTarget as HTMLButtonElement;
+  const videoId = btn.dataset.videoId;
+  const row = btn.closest('.video-row');
+
+  if (!row || !videoId) return;
+
+  const titleInput = row.querySelector('.edit-title-input') as HTMLInputElement;
+  const descInput = row.querySelector('.edit-description-input') as HTMLTextAreaElement;
+
+  const newTitle = titleInput.value.trim();
+  const newDescription = descInput.value.trim();
+
+  if (!newTitle) {
+    alert('Title cannot be empty');
+    return;
+  }
+
+  // Disable button and show loading
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  try {
+    const response = await fetch('/api/admin/videos/update', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        videoId,
+        title: newTitle,
+        description: newDescription || null,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update video');
+    }
+
+    // Update display
+    const titleDisplay = row.querySelector('.video-title-display h3');
+    const descDisplay = row.querySelector('.video-title-display p');
+
+    if (titleDisplay) {
+      titleDisplay.textContent = newTitle;
+    }
+
+    if (newDescription) {
+      if (descDisplay) {
+        descDisplay.textContent = newDescription;
+      } else {
+        // Create description element if it doesn't exist
+        const titleH3 = row.querySelector('.video-title-display h3');
+        if (titleH3) {
+          const newDescP = document.createElement('p');
+          newDescP.className = 'mt-1 line-clamp-2 text-sm text-text-light';
+          newDescP.textContent = newDescription;
+          titleH3.insertAdjacentElement('afterend', newDescP);
+        }
+      }
+    } else if (descDisplay) {
+      descDisplay.remove();
+    }
+
+    // Update original values
+    titleInput.dataset.original = newTitle;
+    descInput.dataset.original = newDescription;
+
+    // Hide edit form
+    const displayDiv = row.querySelector('.video-title-display');
+    const editForm = row.querySelector('.video-edit-form');
+
+    if (displayDiv && editForm) {
+      editForm.classList.add('hidden');
+      displayDiv.classList.remove('hidden');
+    }
+
+    // Show success message briefly
+    btn.textContent = 'Saved!';
+    setTimeout(() => {
+      btn.textContent = 'Save';
+      btn.disabled = false;
+    }, 1500);
+
+  } catch (error) {
+    console.error('Error updating video:', error);
+    alert('Failed to update video. Please try again.');
+    btn.textContent = 'Save';
+    btn.disabled = false;
+  }
+}
+
+// Delete video - show modal
+function handleDeleteClick(e: Event) {
+  const btn = e.currentTarget as HTMLButtonElement;
+  const videoId = btn.dataset.videoId;
+  const videoTitle = btn.dataset.videoTitle;
+
+  if (!videoId || !videoTitle) return;
+
+  videoToDelete = { id: videoId, title: videoTitle };
+
+  const modal = document.getElementById('delete-modal');
+  const titleSpan = document.getElementById('delete-video-title');
+
+  if (modal && titleSpan) {
+    titleSpan.textContent = videoTitle;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+}
+
+// Hide delete modal
+function hideDeleteModal() {
+  const modal = document.getElementById('delete-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+  videoToDelete = null;
+}
+
+// Confirm delete
+async function handleConfirmDelete() {
+  if (!videoToDelete) return;
+
+  const confirmBtn = document.getElementById('confirm-delete-btn') as HTMLButtonElement;
+  if (confirmBtn) {
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Deleting...';
+  }
+
+  try {
+    const response = await fetch('/api/admin/videos/delete', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ videoId: videoToDelete.id }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete video');
+    }
+
+    // Remove row from table
+    const row = document.querySelector(`[data-video-id="${videoToDelete.id}"]`);
+    if (row) {
+      row.remove();
+    }
+
+    // Update video count
+    const countElement = document.querySelector('h1 + p');
+    if (countElement) {
+      const currentText = countElement.textContent || '';
+      const match = currentText.match(/(\d+)/);
+      if (match) {
+        const currentCount = parseInt(match[1]);
+        const newCount = currentCount - 1;
+        countElement.textContent = `${newCount} ${newCount === 1 ? 'video' : 'videos'} total`;
+      }
+    }
+
+    hideDeleteModal();
+
+    // If no videos left, reload page to show empty state
+    const remainingRows = document.querySelectorAll('.video-row');
+    if (remainingRows.length === 0) {
+      window.location.reload();
+    }
+
+  } catch (error) {
+    console.error('Error deleting video:', error);
+    alert('Failed to delete video. Please try again.');
+
+    if (confirmBtn) {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Delete';
+    }
+  }
+}
+</script>

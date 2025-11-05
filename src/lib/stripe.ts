@@ -13,7 +13,16 @@ import type { Order } from '@/types';
 import { ValidationError, NotFoundError } from '@/lib/errors';
 
 // Initialize Stripe with secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+// SECURITY: Fail fast if secret key is not configured
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+if (!stripeSecretKey) {
+  throw new Error(
+    'STRIPE_SECRET_KEY environment variable is required. ' +
+    'Get your key from https://dashboard.stripe.com/apikeys'
+  );
+}
+
+const stripe = new Stripe(stripeSecretKey, {
   apiVersion: '2025-02-24.acacia',
   typescript: true,
 });

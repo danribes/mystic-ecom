@@ -68,12 +68,14 @@ function getPublicUrl(): string {
 }
 
 function getS3Config() {
+  // SECURITY: No fallbacks for credentials
+  // Region can have a default as it's not sensitive
   return {
-    bucket: process.env.S3_BUCKET || '',
-    region: process.env.S3_REGION || 'us-east-1',
+    bucket: process.env.S3_BUCKET,
+    region: process.env.S3_REGION || 'us-east-1', // OK: Not sensitive, reasonable default
     endpoint: process.env.S3_ENDPOINT,
-    accessKey: process.env.S3_ACCESS_KEY_ID || '',
-    secretKey: process.env.S3_SECRET_ACCESS_KEY || '',
+    accessKey: process.env.S3_ACCESS_KEY_ID,
+    secretKey: process.env.S3_SECRET_ACCESS_KEY,
   };
 }
 

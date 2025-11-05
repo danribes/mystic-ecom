@@ -11,6 +11,7 @@ import type { APIRoute } from 'astro';
 import { getSessionFromRequest } from '@/lib/auth/session';
 import { query } from '@/lib/db';
 import { ValidationError, ConflictError, AuthenticationError, AuthorizationError } from '@/lib/errors';
+import { withCSRF } from '@/lib/csrf';
 import { z } from 'zod';
 
 // ==================== Validation Schemas ====================
@@ -110,7 +111,7 @@ async function getProductStats(productId: string) {
  * POST /api/admin/products
  * Create a new digital product
  */
-export const POST: APIRoute = async ({ request, cookies }) => {
+const postHandler: APIRoute = async ({ request, cookies }) => {
   try {
     // Check authentication
     await checkAdminAuth(cookies);
@@ -235,6 +236,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   }
 };
+
+// Export POST handler with CSRF protection (T138)
+export const POST = withCSRF(postHandler);
 
 // ==================== GET Handler ====================
 

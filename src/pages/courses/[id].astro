@@ -1,12 +1,15 @@
 ---
 /**
  * Course Detail Page
- * 
+ *
  * Displays full course information including description, instructor,
  * curriculum, reviews, and enrollment options.
+ *
+ * T189: Added preview video section for marketing to non-enrolled users
  */
 
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import VideoPlayer from '@/components/VideoPlayer.astro';
 import ReviewForm from '@/components/ReviewForm.astro';
 import ReviewStats from '@/components/ReviewStats.astro';
 import ReviewList from '@/components/ReviewList.astro';
@@ -15,6 +18,7 @@ import { getSessionFromRequest } from '@/lib/auth/session';
 import { getPool } from '@/lib/db';
 import { ReviewService } from '@/lib/reviews';
 import { getLocalizedCourseBySlug } from '@/lib/coursesI18n';
+import { getCourseVideos } from '@/lib/videos';
 
 // Get the course ID from the URL
 const { id } = Astro.params;
@@ -312,6 +316,19 @@ if (session && course) {
   }
 }
 
+// T189: Get preview video for marketing (for non-enrolled users)
+let previewVideo = null;
+let previewVideoId = null;
+
+if (course && course.previewVideoUrl && !hasPurchased) {
+  // If previewVideoUrl is a Cloudflare video ID, use it directly
+  // Format: either full URL or just the video ID
+  const videoIdMatch = course.previewVideoUrl.match(/([a-f0-9]{32})/);
+  if (videoIdMatch) {
+    previewVideoId = videoIdMatch[1];
+  }
+}
+
 // Fetch review statistics and reviews list
 const reviewService = new ReviewService(getPool());
 let reviewStats = null;
@@ -513,6 +530,129 @@ const formatLessonType = (type: string): string => {
         </div>
       </div>
     </section>
+
+    <!-- T189: Course Preview Video Section (for marketing to non-enrolled users) -->
+    {previewVideoId && !hasPurchased && (
+      <section class="preview-video-section bg-gray-50 py-12">
+        <div class="container mx-auto px-4 max-w-5xl">
+          <div class="flex flex-col md:flex-row items-center gap-8">
+            <div class="w-full md:w-1/2">
+              <h2 class="text-3xl font-bold text-gray-900 mb-4">
+                Preview This Course
+              </h2>
+              <p class="text-lg text-gray-600 mb-6">
+                Get a taste of what you'll learn in this course. Watch this preview video to see if it's right for you.
+              </p>
+
+              <!-- Enrollment CTA -->
+              <div class="bg-white rounded-lg shadow-lg p-6 border-2 border-primary">
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">
+                  Ready to Start Learning?
+                </h3>
+                <p class="text-gray-600 mb-4">
+                  Enroll now to get full access to all course content, including {getTotalLessons(course.curriculum)} lessons and lifetime access.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-3">
+                  <button
+                    class="flex-1 bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 transform hover:-translate-y-0.5"
+                    onclick="document.querySelector('.btn-add-cart')?.scrollIntoView({ behavior: 'smooth', block: 'center' })"
+                  >
+                    Enroll Now - {formatPrice(course.price)}
+                  </button>
+                  <button
+                    class="flex-1 bg-white hover:bg-gray-50 text-primary font-semibold py-3 px-6 rounded-lg border-2 border-primary transition-colors duration-200"
+                    onclick="document.querySelector('.curriculum-section')?.scrollIntoView({ behavior: 'smooth' })"
+                  >
+                    View Curriculum
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="w-full md:w-1/2">
+              <div class="relative rounded-lg overflow-hidden shadow-2xl">
+                <!-- Lazy Loading wrapper -->
+                <div class="aspect-video bg-gray-900" data-video-container>
+                  {previewVideoId && (
+                    <VideoPlayer
+                      videoId={previewVideoId}
+                      title={`${course.title} - Preview`}
+                      poster={course.thumbnailUrl || course.imageUrl}
+                    />
+                  )}
+                </div>
+
+                <!-- Preview badge -->
+                <div class="absolute top-4 right-4 bg-primary text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                  Preview
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- Fallback: Show thumbnail if no preview video but user not enrolled -->
+    {!previewVideoId && course.previewVideoUrl && !hasPurchased && (
+      <section class="preview-video-section bg-gray-50 py-12">
+        <div class="container mx-auto px-4 max-w-5xl">
+          <div class="flex flex-col md:flex-row items-center gap-8">
+            <div class="w-full md:w-1/2">
+              <h2 class="text-3xl font-bold text-gray-900 mb-4">
+                Ready to Transform Your Life?
+              </h2>
+              <p class="text-lg text-gray-600 mb-6">
+                Join thousands of students who have already enrolled in this transformative course.
+              </p>
+
+              <!-- Enrollment CTA -->
+              <div class="bg-white rounded-lg shadow-lg p-6 border-2 border-primary">
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">
+                  Start Learning Today
+                </h3>
+                <p class="text-gray-600 mb-4">
+                  Get instant access to {getTotalLessons(course.curriculum)} lessons, {formatDuration(course.duration)} of video content, and a certificate upon completion.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-3">
+                  <button
+                    class="flex-1 bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 transform hover:-translate-y-0.5"
+                    onclick="document.querySelector('.btn-add-cart')?.scrollIntoView({ behavior: 'smooth', block: 'center' })"
+                  >
+                    Enroll Now - {formatPrice(course.price)}
+                  </button>
+                  <button
+                    class="flex-1 bg-white hover:bg-gray-50 text-primary font-semibold py-3 px-6 rounded-lg border-2 border-primary transition-colors duration-200"
+                    onclick="document.querySelector('.curriculum-section')?.scrollIntoView({ behavior: 'smooth' })"
+                  >
+                    View Curriculum
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="w-full md:w-1/2">
+              <div class="relative rounded-lg overflow-hidden shadow-2xl">
+                <img
+                  src={course.thumbnailUrl || course.imageUrl}
+                  alt={`${course.title} preview`}
+                  class="w-full h-auto"
+                  loading="lazy"
+                />
+                <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                  <div class="text-center text-white">
+                    <svg class="w-20 h-20 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" />
+                    </svg>
+                    <p class="text-lg font-semibold">Enroll to watch</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    )}
 
     <!-- Course Content -->
     <section class="course-content">

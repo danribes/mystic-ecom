@@ -1,44 +1,36 @@
 /**
  * T047: Stripe Webhook Handler Tests
- * 
+ * T219: Updated to work with refactored service layer
+ *
  * Tests the POST /api/checkout/webhook endpoint
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type Stripe from 'stripe';
 
 // Mock dependencies
 vi.mock('@/lib/stripe', () => ({
   validateWebhook: vi.fn(),
   processWebhookEvent: vi.fn(),
-  getCheckoutSession: vi.fn(),
 }));
 
-vi.mock('@/lib/db', () => ({
-  getPool: vi.fn(() => ({
-    query: vi.fn(),
-  })),
+vi.mock('@/services/webhook.service', () => ({
+  WebhookService: {
+    checkIdempotency: vi.fn(),
+    markProcessed: vi.fn(),
+    handleCheckoutCompleted: vi.fn(),
+    handlePaymentFailure: vi.fn(),
+    handleRefund: vi.fn(),
+  },
 }));
 
-vi.mock('@/services/cart.service', () => ({
-  clearCart: vi.fn(),
-}));
-
-vi.mock('@/lib/whatsapp', () => ({
-  sendOrderNotifications: vi.fn(),
-}));
-
-import { validateWebhook, processWebhookEvent, getCheckoutSession } from '@/lib/stripe';
-import { getPool } from '@/lib/db';
-import { clearCart } from '@/services/cart.service';
-import { sendOrderNotifications } from '@/lib/whatsapp';
+import { validateWebhook, processWebhookEvent } from '@/lib/stripe';
+import { WebhookService } from '@/services/webhook.service';
 import { POST } from '../../src/pages/api/checkout/webhook';
 
-describe('Webhook Handler - T047', () => {
+describe('Webhook Handler - T047/T219', () => {
   let mockRequest: Request;
   const mockOrderId = 'order-uuid-123';
-  const mockUserId = 'user-uuid-456';
-  const mockSessionId = 'cs_test_abc123';
   const mockPaymentIntentId = 'pi_test_789';
 
   // Mock Stripe event
@@ -53,55 +45,13 @@ describe('Webhook Handler - T047', () => {
     request: null,
     data: {
       object: {
-        id: mockSessionId,
+        id: 'cs_test_abc123',
         object: 'checkout.session',
         customer_email: 'test@example.com',
         client_reference_id: mockOrderId,
         payment_intent: mockPaymentIntentId,
       } as any,
     },
-  };
-
-  const mockStripeSession = {
-    id: mockSessionId,
-    customer_email: 'test@example.com',
-    client_reference_id: mockOrderId,
-    payment_intent: mockPaymentIntentId,
-  };
-
-  const mockOrder = {
-    id: mockOrderId,
-    user_id: mockUserId,
-    total_amount: 85.32,
-    status: 'pending',
-    created_at: new Date().toISOString(),
-  };
-
-  const mockOrderItems = [
-    {
-      id: 'item-1',
-      item_type: 'course',
-      title: 'Meditation Course',
-      price: 49.00,
-      quantity: 1,
-      course_id: 'course-uuid-1',
-      digital_product_id: null,
-    },
-    {
-      id: 'item-2',
-      item_type: 'digital_product',
-      title: 'Guided Meditation MP3',
-      price: 15.00,
-      quantity: 2,
-      course_id: null,
-      digital_product_id: 'product-uuid-1',
-    },
-  ];
-
-  const mockUser = {
-    name: 'John Doe',
-    email: 'test@example.com',
-    phone: '+15555550123',
   };
 
   beforeEach(() => {
@@ -120,31 +70,16 @@ describe('Webhook Handler - T047', () => {
         paymentStatus: 'paid',
       },
     });
-    (getCheckoutSession as any).mockResolvedValue(mockStripeSession);
 
-    const mockPool = {
-      query: vi.fn()
-        .mockResolvedValueOnce({ rows: [mockOrder] }) // Get order
-        .mockResolvedValueOnce({ rows: [] }) // Update order
-        .mockResolvedValueOnce({ rows: mockOrderItems }) // Get order items
-        .mockResolvedValueOnce({ rows: [mockUser] }) // Get user
-        .mockResolvedValue({ rows: [] }), // Other queries
-    };
-    (getPool as any).mockReturnValue(mockPool);
-
-    (clearCart as any).mockResolvedValue(undefined);
-    (sendOrderNotifications as any).mockResolvedValue({
-      email: { success: true, messageId: 'email-123' },
-      whatsapp: { success: true, messageId: 'whatsapp-456' },
-      adminWhatsapp: { success: true, messageId: 'admin-789' },
-    });
+    // Mock WebhookService (T219: now using service layer)
+    (WebhookService.checkIdempotency as any).mockResolvedValue(false); // Not processed
+    (WebhookService.markProcessed as any).mockResolvedValue(undefined);
+    (WebhookService.handleCheckoutCompleted as any).mockResolvedValue({ success: true });
+    (WebhookService.handlePaymentFailure as any).mockResolvedValue(undefined);
+    (WebhookService.handleRefund as any).mockResolvedValue(undefined);
 
     process.env.BASE_URL = 'http://localhost:4321';
     process.env.NODE_ENV = 'test';
-  });
-
-  afterEach(() => {
-    vi.clearAllMocks();
   });
 
   describe('Successful Webhook Processing', () => {
@@ -179,74 +114,10 @@ describe('Webhook Handler - T047', () => {
 
       await POST({ request: mockRequest } as any);
 
-      expect(validateWebhook).toHaveBeenCalledWith(
-        expect.any(String),
-        mockSignature
-      );
+      expect(validateWebhook).toHaveBeenCalledWith(expect.any(String), mockSignature);
     });
 
-    it('should update order status to completed', async () => {
-      mockRequest = new Request('http://localhost/api/checkout/webhook', {
-        method: 'POST',
-        headers: {
-          'stripe-signature': 't=timestamp,v1=signature',
-        },
-        body: JSON.stringify(mockCheckoutCompletedEvent),
-      });
-
-      const mockPool = getPool();
-      await POST({ request: mockRequest } as any);
-
-      // Check for UPDATE orders query
-      const updateCalls = (mockPool.query as any).mock.calls.filter((call: any) =>
-        call[0].includes('UPDATE orders') && call[0].includes("status = 'completed'")
-      );
-
-      expect(updateCalls.length).toBeGreaterThan(0);
-      expect(updateCalls[0][1]).toContain(mockOrderId);
-    });
-
-    it('should grant course access to user', async () => {
-      mockRequest = new Request('http://localhost/api/checkout/webhook', {
-        method: 'POST',
-        headers: {
-          'stripe-signature': 't=timestamp,v1=signature',
-        },
-        body: JSON.stringify(mockCheckoutCompletedEvent),
-      });
-
-      const mockPool = getPool();
-      await POST({ request: mockRequest } as any);
-
-      // Check for INSERT into course_enrollments
-      const enrollmentCalls = (mockPool.query as any).mock.calls.filter((call: any) =>
-        call[0].includes('INSERT INTO course_enrollments')
-      );
-
-      expect(enrollmentCalls.length).toBeGreaterThan(0);
-    });
-
-    it('should update booking status to confirmed', async () => {
-      mockRequest = new Request('http://localhost/api/checkout/webhook', {
-        method: 'POST',
-        headers: {
-          'stripe-signature': 't=timestamp,v1=signature',
-        },
-        body: JSON.stringify(mockCheckoutCompletedEvent),
-      });
-
-      const mockPool = getPool();
-      await POST({ request: mockRequest } as any);
-
-      // Check for UPDATE bookings query
-      const bookingCalls = (mockPool.query as any).mock.calls.filter((call: any) =>
-        call[0].includes('UPDATE bookings') && call[0].includes("status = 'confirmed'")
-      );
-
-      expect(bookingCalls.length).toBeGreaterThan(0);
-    });
-
-    it('should send email and WhatsApp notifications', async () => {
+    it('should delegate to WebhookService.handleCheckoutCompleted', async () => {
       mockRequest = new Request('http://localhost/api/checkout/webhook', {
         method: 'POST',
         headers: {
@@ -257,21 +128,14 @@ describe('Webhook Handler - T047', () => {
 
       await POST({ request: mockRequest } as any);
 
-      expect(sendOrderNotifications).toHaveBeenCalledWith(
-        expect.objectContaining({
-          orderId: mockOrderId,
-          customerName: mockUser.name,
-          customerEmail: mockUser.email,
-          items: expect.any(Array),
-        }),
-        expect.objectContaining({
-          customerPhone: mockUser.phone,
-          dashboardUrl: expect.stringContaining('/dashboard/orders/'),
-        })
+      // T219: Verify service layer is called
+      expect(WebhookService.handleCheckoutCompleted).toHaveBeenCalledWith(
+        mockOrderId,
+        expect.any(Object)
       );
     });
 
-    it('should clear customer cart', async () => {
+    it('should check idempotency before processing', async () => {
       mockRequest = new Request('http://localhost/api/checkout/webhook', {
         method: 'POST',
         headers: {
@@ -282,15 +146,28 @@ describe('Webhook Handler - T047', () => {
 
       await POST({ request: mockRequest } as any);
 
-      expect(clearCart).toHaveBeenCalledWith(mockUserId);
+      // T219: Verify idempotency check is called
+      expect(WebhookService.checkIdempotency).toHaveBeenCalledWith('evt_test_123');
     });
 
-    it('should handle already completed orders gracefully', async () => {
-      const completedOrder = { ...mockOrder, status: 'completed' };
-      const mockPool = {
-        query: vi.fn().mockResolvedValue({ rows: [completedOrder] }),
-      };
-      (getPool as any).mockReturnValue(mockPool);
+    it('should mark event as processed', async () => {
+      mockRequest = new Request('http://localhost/api/checkout/webhook', {
+        method: 'POST',
+        headers: {
+          'stripe-signature': 't=timestamp,v1=signature',
+        },
+        body: JSON.stringify(mockCheckoutCompletedEvent),
+      });
+
+      await POST({ request: mockRequest } as any);
+
+      // T219: Verify event marked as processed
+      expect(WebhookService.markProcessed).toHaveBeenCalledWith('evt_test_123');
+    });
+
+    it('should skip already processed events (idempotency)', async () => {
+      // Mock event as already processed
+      (WebhookService.checkIdempotency as any).mockResolvedValue(true);
 
       mockRequest = new Request('http://localhost/api/checkout/webhook', {
         method: 'POST',
@@ -303,31 +180,16 @@ describe('Webhook Handler - T047', () => {
       const response = await POST({ request: mockRequest } as any);
       const data = await response.json();
 
-      expect(response.status).toBe(200);
-      expect(data.message).toBe('Order already processed');
-    });
-
-    it('should continue processing even if notifications fail', async () => {
-      (sendOrderNotifications as any).mockRejectedValue(new Error('Notification service down'));
-
-      mockRequest = new Request('http://localhost/api/checkout/webhook', {
-        method: 'POST',
-        headers: {
-          'stripe-signature': 't=timestamp,v1=signature',
-        },
-        body: JSON.stringify(mockCheckoutCompletedEvent),
-      });
-
-      const response = await POST({ request: mockRequest } as any);
-      const data = await response.json();
-
-      // Should still succeed
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
+      expect(data.message).toBe('Event already processed (idempotent)');
+
+      // Should not call handle functions
+      expect(WebhookService.handleCheckoutCompleted).not.toHaveBeenCalled();
     });
 
-    it('should continue processing even if cart clear fails', async () => {
-      (clearCart as any).mockRejectedValue(new Error('Cart service error'));
+    it('should continue processing even if service layer succeeds', async () => {
+      (WebhookService.handleCheckoutCompleted as any).mockResolvedValue({ success: true });
 
       mockRequest = new Request('http://localhost/api/checkout/webhook', {
         method: 'POST',
@@ -338,21 +200,15 @@ describe('Webhook Handler - T047', () => {
       });
 
       const response = await POST({ request: mockRequest } as any);
-      const data = await response.json();
 
-      // Should still succeed
       expect(response.status).toBe(200);
-      expect(data.success).toBe(true);
     });
   });
 
-  describe('Validation & Error Handling', () => {
+  describe('Error Handling', () => {
     it('should return 400 if stripe-signature header is missing', async () => {
       mockRequest = new Request('http://localhost/api/checkout/webhook', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(mockCheckoutCompletedEvent),
       });
 
@@ -361,7 +217,7 @@ describe('Webhook Handler - T047', () => {
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
-      expect(data.error).toContain('Missing Stripe signature');
+      expect(data.error).toBe('Missing Stripe signature');
     });
 
     it('should return 400 if signature verification fails', async () => {
@@ -372,7 +228,7 @@ describe('Webhook Handler - T047', () => {
       mockRequest = new Request('http://localhost/api/checkout/webhook', {
         method: 'POST',
         headers: {
-          'stripe-signature': 'invalid-signature',
+          'stripe-signature': 'invalid',
         },
         body: JSON.stringify(mockCheckoutCompletedEvent),
       });
@@ -382,13 +238,13 @@ describe('Webhook Handler - T047', () => {
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
-      expect(data.error).toContain('Invalid signature');
+      expect(data.error).toBe('Invalid signature');
     });
 
     it('should return 400 if orderId is missing from event', async () => {
       (processWebhookEvent as any).mockResolvedValue({
         type: 'checkout.completed',
-        orderId: null,
+        orderId: null, // Missing orderId
         paymentIntentId: mockPaymentIntentId,
       });
 
@@ -405,14 +261,14 @@ describe('Webhook Handler - T047', () => {
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
-      expect(data.error).toContain('Order ID not found');
+      expect(data.error).toBe('Order ID not found in session');
     });
 
     it('should return 404 if order not found in database', async () => {
-      const mockPool = {
-        query: vi.fn().mockResolvedValue({ rows: [] }),
-      };
-      (getPool as any).mockReturnValue(mockPool);
+      (WebhookService.handleCheckoutCompleted as any).mockResolvedValue({
+        success: false,
+        error: 'Order not found',
+      });
 
       mockRequest = new Request('http://localhost/api/checkout/webhook', {
         method: 'POST',
@@ -427,14 +283,14 @@ describe('Webhook Handler - T047', () => {
 
       expect(response.status).toBe(404);
       expect(data.success).toBe(false);
-      expect(data.error).toContain('Order not found');
+      expect(data.error).toBe('Order not found');
     });
 
     it('should return 500 if database error occurs', async () => {
-      const mockPool = {
-        query: vi.fn().mockRejectedValue(new Error('Database connection failed')),
-      };
-      (getPool as any).mockReturnValue(mockPool);
+      (WebhookService.handleCheckoutCompleted as any).mockResolvedValue({
+        success: false,
+        error: 'Database error',
+      });
 
       mockRequest = new Request('http://localhost/api/checkout/webhook', {
         method: 'POST',
@@ -449,15 +305,13 @@ describe('Webhook Handler - T047', () => {
 
       expect(response.status).toBe(500);
       expect(data.success).toBe(false);
-      expect(data.error).toContain('Webhook processing failed');
     });
   });
 
-  describe('Other Webhook Events', () => {
+  describe('Other Event Types', () => {
     it('should handle payment_intent.succeeded event', async () => {
       (processWebhookEvent as any).mockResolvedValue({
         type: 'payment.succeeded',
-        orderId: mockOrderId,
         paymentIntentId: mockPaymentIntentId,
       });
 
@@ -466,10 +320,7 @@ describe('Webhook Handler - T047', () => {
         headers: {
           'stripe-signature': 't=timestamp,v1=signature',
         },
-        body: JSON.stringify({
-          ...mockCheckoutCompletedEvent,
-          type: 'payment_intent.succeeded',
-        }),
+        body: JSON.stringify(mockCheckoutCompletedEvent),
       });
 
       const response = await POST({ request: mockRequest } as any);
@@ -483,20 +334,16 @@ describe('Webhook Handler - T047', () => {
     it('should handle payment_intent.payment_failed event', async () => {
       (processWebhookEvent as any).mockResolvedValue({
         type: 'payment.failed',
-        orderId: mockOrderId,
         paymentIntentId: mockPaymentIntentId,
+        orderId: mockOrderId,
       });
 
-      const mockPool = getPool();
       mockRequest = new Request('http://localhost/api/checkout/webhook', {
         method: 'POST',
         headers: {
           'stripe-signature': 't=timestamp,v1=signature',
         },
-        body: JSON.stringify({
-          ...mockCheckoutCompletedEvent,
-          type: 'payment_intent.payment_failed',
-        }),
+        body: JSON.stringify(mockCheckoutCompletedEvent),
       });
 
       const response = await POST({ request: mockRequest } as any);
@@ -504,31 +351,25 @@ describe('Webhook Handler - T047', () => {
 
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
+      expect(data.message).toBe('Payment failure recorded');
 
-      // Check for payment_failed status update
-      const updateCalls = (mockPool.query as any).mock.calls.filter((call: any) =>
-        call[0].includes("status = 'payment_failed'")
-      );
-      expect(updateCalls.length).toBeGreaterThan(0);
+      // T219: Verify service layer called
+      expect(WebhookService.handlePaymentFailure).toHaveBeenCalledWith(mockOrderId);
     });
 
     it('should handle charge.refunded event', async () => {
       (processWebhookEvent as any).mockResolvedValue({
         type: 'charge.refunded',
-        orderId: mockOrderId,
         paymentIntentId: mockPaymentIntentId,
+        orderId: mockOrderId,
       });
 
-      const mockPool = getPool();
       mockRequest = new Request('http://localhost/api/checkout/webhook', {
         method: 'POST',
         headers: {
           'stripe-signature': 't=timestamp,v1=signature',
         },
-        body: JSON.stringify({
-          ...mockCheckoutCompletedEvent,
-          type: 'charge.refunded',
-        }),
+        body: JSON.stringify(mockCheckoutCompletedEvent),
       });
 
       const response = await POST({ request: mockRequest } as any);
@@ -538,29 +379,13 @@ describe('Webhook Handler - T047', () => {
       expect(data.success).toBe(true);
       expect(data.message).toBe('Refund processed');
 
-      // Check for refunded status update
-      const updateCalls = (mockPool.query as any).mock.calls.filter((call: any) =>
-        call[0].includes("status = 'refunded'")
-      );
-      expect(updateCalls.length).toBeGreaterThan(0);
-
-      // Check for course enrollment deletion
-      const deleteCalls = (mockPool.query as any).mock.calls.filter((call: any) =>
-        call[0].includes('DELETE FROM course_enrollments')
-      );
-      expect(deleteCalls.length).toBeGreaterThan(0);
-
-      // Check for booking cancellation
-      const cancelCalls = (mockPool.query as any).mock.calls.filter((call: any) =>
-        call[0].includes('UPDATE bookings') && call[0].includes("status = 'cancelled'")
-      );
-      expect(cancelCalls.length).toBeGreaterThan(0);
+      // T219: Verify service layer called
+      expect(WebhookService.handleRefund).toHaveBeenCalledWith(mockOrderId);
     });
 
     it('should handle unknown event types gracefully', async () => {
       (processWebhookEvent as any).mockResolvedValue({
-        type: 'customer.created',
-        orderId: null,
+        type: 'unknown.event',
       });
 
       mockRequest = new Request('http://localhost/api/checkout/webhook', {
@@ -568,10 +393,7 @@ describe('Webhook Handler - T047', () => {
         headers: {
           'stripe-signature': 't=timestamp,v1=signature',
         },
-        body: JSON.stringify({
-          ...mockCheckoutCompletedEvent,
-          type: 'customer.created',
-        }),
+        body: JSON.stringify(mockCheckoutCompletedEvent),
       });
 
       const response = await POST({ request: mockRequest } as any);

@@ -1,15 +1,68 @@
 /**
  * DELETE /api/cart/remove
- * 
+ *
  * Remove an item from the shopping cart
  * Uses Redis-backed cart service
+ *
+ * Security: T200 - Rate limited to 100 requests per hour per session
  */
 
 import type { APIRoute } from 'astro';
 import { removeFromCart } from '@/services/cart.service';
+import { rateLimit, RateLimitProfiles } from '@/lib/ratelimit';
+import { validateCSRF } from '@/lib/csrf';
 import type { OrderItemType } from '@/types';
 
-export const DELETE: APIRoute = async ({ request, cookies }) => {
+export const DELETE: APIRoute = async (context) => {
+  const { request, cookies } = context;
+
+  // T201: CSRF protection - validate token
+  const csrfValid = await validateCSRF(context);
+  if (!csrfValid) {
+    console.warn('[CART-REMOVE] CSRF validation failed:', {
+      ip: context.clientAddress,
+    });
+
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: 'CSRF validation failed',
+        code: 'CSRF_TOKEN_INVALID',
+      }),
+      {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+
+  // Rate limiting: 100 requests per hour (prevents cart abuse)
+  const rateLimitResult = await rateLimit(context, RateLimitProfiles.CART);
+  if (!rateLimitResult.allowed) {
+    const retryAfter = rateLimitResult.resetAt - Math.floor(Date.now() / 1000);
+    console.warn('[CART-REMOVE] Rate limit exceeded:', {
+      ip: context.clientAddress,
+      resetAt: new Date(rateLimitResult.resetAt * 1000).toISOString(),
+    });
+
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: 'Too many cart operations. Please try again later.',
+        code: 'RATE_LIMIT_EXCEEDED',
+        resetAt: rateLimitResult.resetAt,
+        retryAfter: retryAfter,
+      }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': String(retryAfter > 0 ? retryAfter : 1),
+        },
+      }
+    );
+  }
+
   try {
     // Get user ID from session cookie
     const sessionId = cookies.get('session_id')?.value;

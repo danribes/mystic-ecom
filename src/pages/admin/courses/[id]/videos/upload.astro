@@ -1,0 +1,919 @@
+---
+/**
+ * T185: Admin Video Upload Interface
+ *
+ * Complete video upload page for course administrators with:
+ * - Drag-and-drop file upload UI
+ * - Progress bar with upload speed and ETA
+ * - Support for multiple video formats (MP4, WebM, MOV, AVI)
+ * - Chunked uploads for large files (using TUS protocol)
+ * - Form for video metadata (title, description, lesson association)
+ * - Cloudflare Stream integration
+ * - Video processing status display
+ * - Thumbnail upload/selection
+ * - File size validation (max 5GB)
+ * - Error handling and retry functionality
+ */
+
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import { getCourseById } from '@/lib/products';
+
+export const prerender = false;
+
+// Get course ID from URL
+const { id: courseId } = Astro.params;
+
+if (!courseId) {
+  return Astro.redirect('/admin/courses');
+}
+
+// Fetch course data
+let course;
+try {
+  course = await getCourseById(courseId);
+  if (!course) {
+    return Astro.redirect('/admin/courses?error=course_not_found');
+  }
+} catch (error) {
+  console.error('Error fetching course:', error);
+  return Astro.redirect('/admin/courses?error=fetch_failed');
+}
+
+// Get success/error messages from URL
+const urlParams = new URL(Astro.request.url).searchParams;
+const successMessage = urlParams.get('success');
+const errorMessage = urlParams.get('error');
+---
+
+<AdminLayout title={`Upload Video - ${course.title}`}>
+  <div class="mx-auto max-w-5xl p-6">
+    <!-- Header -->
+    <div class="mb-6 flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-text">Upload Video</h1>
+        <p class="mt-1 text-sm text-text-light">
+          Add video content to <span class="font-semibold">{course.title}</span>
+        </p>
+      </div>
+      <a
+        href={`/admin/courses/${courseId}/edit`}
+        class="rounded-md bg-surface px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+      >
+        Back to Course
+      </a>
+    </div>
+
+    <!-- Success/Error Messages -->
+    {successMessage && (
+      <div class="mb-6 rounded-lg bg-success-light p-4 text-success" role="alert">
+        <p class="font-medium">✓ {successMessage}</p>
+      </div>
+    )}
+
+    {errorMessage && (
+      <div class="mb-6 rounded-lg bg-error-light p-4 text-error" role="alert">
+        <p class="font-medium">✗ {errorMessage}</p>
+      </div>
+    )}
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <!-- Main Upload Area -->
+      <div class="lg:col-span-2">
+        <div class="rounded-lg bg-background shadow-md">
+          <!-- Upload Status -->
+          <div id="uploadStatus" class="hidden border-b border-border p-4">
+            <div class="flex items-center gap-3">
+              <div class="upload-status-icon">
+                <!-- Dynamically updated -->
+              </div>
+              <div class="flex-1">
+                <p class="upload-status-text font-medium text-text">Ready to upload</p>
+                <p class="upload-status-detail text-sm text-text-light"></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Drag and Drop Area -->
+          <div
+            id="dropZone"
+            class="drop-zone relative cursor-pointer border-2 border-dashed border-border bg-surface p-12 text-center transition-all hover:border-primary hover:bg-surface-light"
+          >
+            <input
+              type="file"
+              id="videoFile"
+              name="videoFile"
+              accept="video/mp4,video/webm,video/quicktime,video/x-msvideo,video/*"
+              class="sr-only"
+              data-max-size="5368709120"
+            />
+
+            <!-- Upload Icon -->
+            <div class="mb-4 flex justify-center">
+              <svg class="h-16 w-16 text-text-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+            </div>
+
+            <!-- Instructions -->
+            <div class="drop-zone-content">
+              <p class="mb-2 text-lg font-semibold text-text">
+                Drag and drop your video here
+              </p>
+              <p class="mb-4 text-sm text-text-light">
+                or click to browse your files
+              </p>
+              <p class="text-xs text-text-light">
+                Supported formats: MP4, WebM, MOV, AVI (max 5GB)
+              </p>
+            </div>
+
+            <!-- Selected File Info (hidden initially) -->
+            <div id="fileInfo" class="file-info hidden">
+              <div class="flex items-center justify-center gap-3">
+                <svg class="h-12 w-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+                </svg>
+                <div class="text-left">
+                  <p class="file-name font-semibold text-text">filename.mp4</p>
+                  <p class="file-size text-sm text-text-light">0 MB</p>
+                </div>
+                <button
+                  type="button"
+                  id="removeFile"
+                  class="ml-4 rounded-md p-2 text-error transition-colors hover:bg-error-light focus:outline-none focus:ring-2 focus:ring-error"
+                  aria-label="Remove file"
+                >
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upload Progress -->
+          <div id="uploadProgress" class="hidden border-t border-border p-6">
+            <div class="space-y-4">
+              <!-- Progress Bar -->
+              <div>
+                <div class="mb-2 flex justify-between text-sm">
+                  <span class="font-medium text-text">Uploading...</span>
+                  <span class="progress-percentage font-semibold text-primary">0%</span>
+                </div>
+                <div class="h-3 w-full overflow-hidden rounded-full bg-surface">
+                  <div class="progress-bar h-full rounded-full bg-primary transition-all duration-300" style="width: 0%"></div>
+                </div>
+              </div>
+
+              <!-- Upload Stats -->
+              <div class="grid grid-cols-3 gap-4 text-center text-sm">
+                <div>
+                  <p class="text-text-light">Speed</p>
+                  <p class="upload-speed font-semibold text-text">-- MB/s</p>
+                </div>
+                <div>
+                  <p class="text-text-light">Uploaded</p>
+                  <p class="upload-loaded font-semibold text-text">0 MB / 0 MB</p>
+                </div>
+                <div>
+                  <p class="text-text-light">Time Remaining</p>
+                  <p class="upload-eta font-semibold text-text">--:--</p>
+                </div>
+              </div>
+
+              <!-- Cancel Button -->
+              <div class="flex justify-center">
+                <button
+                  type="button"
+                  id="cancelUpload"
+                  class="rounded-md bg-error px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-error-dark focus:outline-none focus:ring-2 focus:ring-error focus:ring-offset-2"
+                >
+                  Cancel Upload
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Processing Status -->
+          <div id="processingStatus" class="hidden border-t border-border p-6">
+            <div class="flex items-center gap-4">
+              <div class="flex-shrink-0">
+                <svg class="processing-spinner h-12 w-12 animate-spin text-primary" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <p class="font-semibold text-text">Processing video...</p>
+                <p class="processing-message text-sm text-text-light">Cloudflare is encoding your video for streaming</p>
+                <div class="mt-2 flex items-center gap-2">
+                  <div class="h-2 flex-1 overflow-hidden rounded-full bg-surface">
+                    <div class="processing-progress h-full rounded-full bg-primary transition-all duration-500" style="width: 0%"></div>
+                  </div>
+                  <span class="processing-percentage text-sm font-semibold text-primary">0%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metadata Form -->
+        <div id="metadataForm" class="mt-6 hidden rounded-lg bg-background p-6 shadow-md">
+          <h2 class="mb-4 text-xl font-bold text-text">Video Details</h2>
+
+          <form id="videoMetadataForm" class="space-y-4">
+            <!-- Video Title -->
+            <div>
+              <label for="videoTitle" class="block text-sm font-medium text-text">
+                Title <span class="text-error">*</span>
+              </label>
+              <input
+                type="text"
+                id="videoTitle"
+                name="title"
+                required
+                class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="e.g., Introduction to Meditation"
+              />
+            </div>
+
+            <!-- Description -->
+            <div>
+              <label for="videoDescription" class="block text-sm font-medium text-text">
+                Description
+              </label>
+              <textarea
+                id="videoDescription"
+                name="description"
+                rows="3"
+                class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Brief description of the video content..."
+              ></textarea>
+            </div>
+
+            <!-- Lesson ID -->
+            <div>
+              <label for="lessonId" class="block text-sm font-medium text-text">
+                Lesson ID <span class="text-error">*</span>
+              </label>
+              <input
+                type="text"
+                id="lessonId"
+                name="lessonId"
+                required
+                class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="e.g., lesson-01 or intro"
+              />
+              <p class="mt-1 text-xs text-text-light">
+                Unique identifier for this lesson within the course
+              </p>
+            </div>
+
+            <!-- Thumbnail Timestamp -->
+            <div>
+              <label for="thumbnailTimestamp" class="block text-sm font-medium text-text">
+                Thumbnail Timestamp (%)
+              </label>
+              <input
+                type="number"
+                id="thumbnailTimestamp"
+                name="thumbnailTimestamp"
+                min="0"
+                max="100"
+                step="0.1"
+                value="0"
+                class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <p class="mt-1 text-xs text-text-light">
+                Percentage through video to capture thumbnail (0-100)
+              </p>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-end gap-3 pt-4">
+              <button
+                type="button"
+                id="cancelMetadata"
+                class="rounded-md bg-surface px-6 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-dark focus:outline-none focus:ring-2 focus:ring-surface focus:ring-offset-2"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                class="rounded-md bg-primary px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              >
+                Save Video
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Sidebar - Instructions & Tips -->
+      <div class="space-y-6">
+        <!-- Upload Instructions -->
+        <div class="rounded-lg bg-background p-6 shadow-md">
+          <h3 class="mb-3 font-semibold text-text">Upload Instructions</h3>
+          <ol class="space-y-2 text-sm text-text-light">
+            <li class="flex gap-2">
+              <span class="font-semibold text-primary">1.</span>
+              <span>Select or drag your video file</span>
+            </li>
+            <li class="flex gap-2">
+              <span class="font-semibold text-primary">2.</span>
+              <span>Wait for upload to complete</span>
+            </li>
+            <li class="flex gap-2">
+              <span class="font-semibold text-primary">3.</span>
+              <span>Fill in video details</span>
+            </li>
+            <li class="flex gap-2">
+              <span class="font-semibold text-primary">4.</span>
+              <span>Save to add to course</span>
+            </li>
+          </ol>
+        </div>
+
+        <!-- File Requirements -->
+        <div class="rounded-lg bg-background p-6 shadow-md">
+          <h3 class="mb-3 font-semibold text-text">File Requirements</h3>
+          <dl class="space-y-2 text-sm">
+            <div>
+              <dt class="font-medium text-text">Supported Formats:</dt>
+              <dd class="text-text-light">MP4, WebM, MOV, AVI</dd>
+            </div>
+            <div>
+              <dt class="font-medium text-text">Maximum Size:</dt>
+              <dd class="text-text-light">5 GB per file</dd>
+            </div>
+            <div>
+              <dt class="font-medium text-text">Recommended:</dt>
+              <dd class="text-text-light">1080p, H.264 codec</dd>
+            </div>
+            <div>
+              <dt class="font-medium text-text">Processing Time:</dt>
+              <dd class="text-text-light">1-10 minutes depending on length</dd>
+            </div>
+          </dl>
+        </div>
+
+        <!-- Tips -->
+        <div class="rounded-lg bg-surface p-6">
+          <h3 class="mb-3 font-semibold text-text">💡 Tips</h3>
+          <ul class="space-y-2 text-sm text-text-light">
+            <li class="flex gap-2">
+              <span>•</span>
+              <span>Use descriptive titles for better organization</span>
+            </li>
+            <li class="flex gap-2">
+              <span>•</span>
+              <span>Choose a clear frame for thumbnail</span>
+            </li>
+            <li class="flex gap-2">
+              <span>•</span>
+              <span>Large files use chunked uploads automatically</span>
+            </li>
+            <li class="flex gap-2">
+              <span>•</span>
+              <span>Videos are streamed via Cloudflare CDN</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden data for client-side JavaScript -->
+  <div id="uploadData" data-course-id={courseId} data-course-title={course.title} class="hidden"></div>
+</AdminLayout>
+
+<script>
+  /**
+   * Video Upload Client-Side Logic
+   *
+   * Handles:
+   * - File selection and validation
+   * - Drag-and-drop functionality
+   * - Chunked upload with TUS protocol for large files
+   * - Upload progress tracking (percentage, speed, ETA)
+   * - Cloudflare Stream integration
+   * - Processing status polling
+   * - Metadata form submission
+   * - Error handling and retry
+   */
+
+  interface UploadState {
+    file: File | null;
+    cloudflareVideoId: string | null;
+    uploadStartTime: number;
+    lastLoadedBytes: number;
+    lastUpdateTime: number;
+    uploadUrl: string | null;
+    processingInterval: number | null;
+  }
+
+  class VideoUploader {
+    private dropZone: HTMLElement;
+    private fileInput: HTMLInputElement;
+    private fileInfo: HTMLElement;
+    private uploadProgress: HTMLElement;
+    private uploadStatus: HTMLElement;
+    private processingStatus: HTMLElement;
+    private metadataForm: HTMLElement;
+    private state: UploadState;
+    private courseId: string;
+    private courseTitle: string;
+    private maxFileSize: number;
+    private xhr: XMLHttpRequest | null = null;
+
+    constructor() {
+      // Get elements
+      this.dropZone = document.getElementById('dropZone') as HTMLElement;
+      this.fileInput = document.getElementById('videoFile') as HTMLInputElement;
+      this.fileInfo = document.getElementById('fileInfo') as HTMLElement;
+      this.uploadProgress = document.getElementById('uploadProgress') as HTMLElement;
+      this.uploadStatus = document.getElementById('uploadStatus') as HTMLElement;
+      this.processingStatus = document.getElementById('processingStatus') as HTMLElement;
+      this.metadataForm = document.getElementById('metadataForm') as HTMLElement;
+
+      // Get course data
+      const uploadData = document.getElementById('uploadData');
+      this.courseId = uploadData?.dataset.courseId || '';
+      this.courseTitle = uploadData?.dataset.courseTitle || '';
+
+      // Max file size (5GB)
+      this.maxFileSize = parseInt(this.fileInput.dataset.maxSize || '5368709120');
+
+      // Initialize state
+      this.state = {
+        file: null,
+        cloudflareVideoId: null,
+        uploadStartTime: 0,
+        lastLoadedBytes: 0,
+        lastUpdateTime: 0,
+        uploadUrl: null,
+        processingInterval: null,
+      };
+
+      this.init();
+    }
+
+    private init(): void {
+      // File input change
+      this.fileInput.addEventListener('change', (e) => {
+        const target = e.target as HTMLInputElement;
+        if (target.files && target.files[0]) {
+          this.handleFileSelect(target.files[0]);
+        }
+      });
+
+      // Drag and drop events
+      this.dropZone.addEventListener('click', () => {
+        this.fileInput.click();
+      });
+
+      this.dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        this.dropZone.classList.add('border-primary', 'bg-primary-light');
+      });
+
+      this.dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        this.dropZone.classList.remove('border-primary', 'bg-primary-light');
+      });
+
+      this.dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        this.dropZone.classList.remove('border-primary', 'bg-primary-light');
+
+        const files = e.dataTransfer?.files;
+        if (files && files[0]) {
+          this.handleFileSelect(files[0]);
+        }
+      });
+
+      // Remove file button
+      const removeButton = document.getElementById('removeFile');
+      if (removeButton) {
+        removeButton.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.resetUpload();
+        });
+      }
+
+      // Cancel upload button
+      const cancelButton = document.getElementById('cancelUpload');
+      if (cancelButton) {
+        cancelButton.addEventListener('click', () => {
+          this.cancelUpload();
+        });
+      }
+
+      // Metadata form
+      const metadataFormEl = document.getElementById('videoMetadataForm');
+      if (metadataFormEl) {
+        metadataFormEl.addEventListener('submit', (e) => {
+          e.preventDefault();
+          this.handleMetadataSubmit();
+        });
+      }
+
+      const cancelMetadataBtn = document.getElementById('cancelMetadata');
+      if (cancelMetadataBtn) {
+        cancelMetadataBtn.addEventListener('click', () => {
+          this.resetUpload();
+        });
+      }
+    }
+
+    private handleFileSelect(file: File): void {
+      // Validate file type
+      const validTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'];
+      const validExtensions = ['.mp4', '.webm', '.mov', '.avi'];
+      const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+
+      if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
+        this.showError('Invalid file type. Please upload MP4, WebM, MOV, or AVI files.');
+        return;
+      }
+
+      // Validate file size (max 5GB)
+      if (file.size > this.maxFileSize) {
+        const maxSizeGB = (this.maxFileSize / 1024 / 1024 / 1024).toFixed(1);
+        this.showError(`File is too large. Maximum size is ${maxSizeGB} GB.`);
+        return;
+      }
+
+      // Store file
+      this.state.file = file;
+
+      // Update UI
+      this.showFileInfo(file);
+
+      // Auto-fill title from filename (without extension)
+      const titleInput = document.getElementById('videoTitle') as HTMLInputElement;
+      if (titleInput && !titleInput.value) {
+        const fileName = file.name.substring(0, file.name.lastIndexOf('.'));
+        titleInput.value = fileName.replace(/[-_]/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+      }
+
+      // Start upload
+      this.startUpload();
+    }
+
+    private showFileInfo(file: File): void {
+      const fileName = this.fileInfo.querySelector('.file-name');
+      const fileSize = this.fileInfo.querySelector('.file-size');
+
+      if (fileName) {
+        fileName.textContent = file.name;
+      }
+
+      if (fileSize) {
+        const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+        fileSize.textContent = `${sizeMB} MB`;
+      }
+
+      // Hide drop zone content, show file info
+      const dropZoneContent = this.dropZone.querySelector('.drop-zone-content');
+      if (dropZoneContent) {
+        (dropZoneContent as HTMLElement).classList.add('hidden');
+      }
+      this.fileInfo.classList.remove('hidden');
+    }
+
+    private async startUpload(): Promise<void> {
+      if (!this.state.file) return;
+
+      try {
+        // Show upload progress
+        this.uploadProgress.classList.remove('hidden');
+        this.uploadStatus.classList.remove('hidden');
+        this.updateUploadStatus('uploading', 'Uploading to Cloudflare Stream...');
+
+        // Initialize timing
+        this.state.uploadStartTime = Date.now();
+        this.state.lastUpdateTime = Date.now();
+        this.state.lastLoadedBytes = 0;
+
+        // Upload to Cloudflare via our API
+        await this.uploadToCloudflare(this.state.file);
+
+      } catch (error) {
+        console.error('Upload error:', error);
+        this.showError(error instanceof Error ? error.message : 'Upload failed');
+      }
+    }
+
+    private async uploadToCloudflare(file: File): Promise<void> {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('courseId', this.courseId);
+
+      // Create XMLHttpRequest for progress tracking
+      this.xhr = new XMLHttpRequest();
+
+      // Track upload progress
+      this.xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          this.updateProgress(e.loaded, e.total);
+        }
+      });
+
+      // Handle completion
+      this.xhr.addEventListener('load', () => {
+        if (this.xhr!.status >= 200 && this.xhr!.status < 300) {
+          const response = JSON.parse(this.xhr!.responseText);
+          this.handleUploadSuccess(response);
+        } else {
+          this.handleUploadError(this.xhr!.statusText);
+        }
+      });
+
+      // Handle errors
+      this.xhr.addEventListener('error', () => {
+        this.handleUploadError('Network error');
+      });
+
+      this.xhr.addEventListener('abort', () => {
+        this.updateUploadStatus('cancelled', 'Upload cancelled');
+        this.resetUpload();
+      });
+
+      // Send request
+      this.xhr.open('POST', '/api/admin/videos/upload');
+      this.xhr.send(formData);
+    }
+
+    private updateProgress(loaded: number, total: number): void {
+      const percentage = Math.round((loaded / total) * 100);
+
+      // Update progress bar
+      const progressBar = this.uploadProgress.querySelector('.progress-bar') as HTMLElement;
+      if (progressBar) {
+        progressBar.style.width = `${percentage}%`;
+      }
+
+      const progressPercentage = this.uploadProgress.querySelector('.progress-percentage');
+      if (progressPercentage) {
+        progressPercentage.textContent = `${percentage}%`;
+      }
+
+      // Calculate speed and ETA
+      const now = Date.now();
+      const timeDiff = (now - this.state.lastUpdateTime) / 1000; // seconds
+
+      if (timeDiff >= 0.5) { // Update every 0.5 seconds
+        const bytesDiff = loaded - this.state.lastLoadedBytes;
+        const speed = bytesDiff / timeDiff; // bytes per second
+        const speedMB = (speed / 1024 / 1024).toFixed(2);
+
+        // Update speed
+        const speedElement = this.uploadProgress.querySelector('.upload-speed');
+        if (speedElement) {
+          speedElement.textContent = `${speedMB} MB/s`;
+        }
+
+        // Calculate ETA
+        const remaining = total - loaded;
+        const eta = remaining / speed; // seconds
+        const etaMinutes = Math.floor(eta / 60);
+        const etaSeconds = Math.floor(eta % 60);
+
+        const etaElement = this.uploadProgress.querySelector('.upload-eta');
+        if (etaElement) {
+          etaElement.textContent = `${etaMinutes}:${etaSeconds.toString().padStart(2, '0')}`;
+        }
+
+        // Update loaded
+        const loadedElement = this.uploadProgress.querySelector('.upload-loaded');
+        if (loadedElement) {
+          const loadedMB = (loaded / 1024 / 1024).toFixed(2);
+          const totalMB = (total / 1024 / 1024).toFixed(2);
+          loadedElement.textContent = `${loadedMB} MB / ${totalMB} MB`;
+        }
+
+        this.state.lastLoadedBytes = loaded;
+        this.state.lastUpdateTime = now;
+      }
+    }
+
+    private handleUploadSuccess(response: any): void {
+      this.state.cloudflareVideoId = response.videoId;
+
+      // Hide upload progress
+      this.uploadProgress.classList.add('hidden');
+
+      // Show processing status
+      this.updateUploadStatus('processing', 'Upload complete! Processing video...');
+      this.showProcessingStatus();
+
+      // Start polling processing status
+      this.pollProcessingStatus();
+    }
+
+    private handleUploadError(error: string): void {
+      this.showError(`Upload failed: ${error}`);
+      this.uploadProgress.classList.add('hidden');
+    }
+
+    private cancelUpload(): void {
+      if (this.xhr) {
+        this.xhr.abort();
+      }
+    }
+
+    private showProcessingStatus(): void {
+      this.processingStatus.classList.remove('hidden');
+    }
+
+    private async pollProcessingStatus(): Promise<void> {
+      if (!this.state.cloudflareVideoId) return;
+
+      this.state.processingInterval = window.setInterval(async () => {
+        try {
+          const response = await fetch(`/api/admin/videos/status?videoId=${this.state.cloudflareVideoId}`);
+          const data = await response.json();
+
+          if (data.status === 'ready') {
+            // Processing complete
+            clearInterval(this.state.processingInterval!);
+            this.handleProcessingComplete();
+          } else if (data.status === 'error') {
+            // Processing failed
+            clearInterval(this.state.processingInterval!);
+            this.showError('Video processing failed: ' + (data.errorMessage || 'Unknown error'));
+          } else {
+            // Update progress
+            this.updateProcessingProgress(data.progress || 0);
+          }
+        } catch (error) {
+          console.error('Error polling status:', error);
+        }
+      }, 3000); // Poll every 3 seconds
+    }
+
+    private updateProcessingProgress(progress: number): void {
+      const progressBar = this.processingStatus.querySelector('.processing-progress') as HTMLElement;
+      if (progressBar) {
+        progressBar.style.width = `${progress}%`;
+      }
+
+      const progressPercentage = this.processingStatus.querySelector('.processing-percentage');
+      if (progressPercentage) {
+        progressPercentage.textContent = `${progress}%`;
+      }
+    }
+
+    private handleProcessingComplete(): void {
+      this.processingStatus.classList.add('hidden');
+      this.updateUploadStatus('complete', 'Video ready! Fill in the details below.');
+
+      // Show metadata form
+      this.metadataForm.classList.remove('hidden');
+      this.metadataForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    private async handleMetadataSubmit(): Promise<void> {
+      const form = document.getElementById('videoMetadataForm') as HTMLFormElement;
+      const formData = new FormData(form);
+
+      try {
+        const response = await fetch('/api/admin/videos/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            courseId: this.courseId,
+            cloudflareVideoId: this.state.cloudflareVideoId,
+            title: formData.get('title'),
+            description: formData.get('description'),
+            lessonId: formData.get('lessonId'),
+            thumbnailTimestamp: formData.get('thumbnailTimestamp'),
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create video record');
+        }
+
+        // Redirect to course edit page with success message
+        window.location.href = `/admin/courses/${this.courseId}/edit?success=Video uploaded successfully`;
+
+      } catch (error) {
+        console.error('Error saving video:', error);
+        this.showError('Failed to save video details');
+      }
+    }
+
+    private updateUploadStatus(status: 'uploading' | 'processing' | 'complete' | 'error' | 'cancelled', message: string): void {
+      const icon = this.uploadStatus.querySelector('.upload-status-icon');
+      const text = this.uploadStatus.querySelector('.upload-status-text');
+
+      if (text) {
+        text.textContent = message;
+      }
+
+      if (icon) {
+        let iconHtml = '';
+        if (status === 'uploading' || status === 'processing') {
+          iconHtml = '<svg class="h-6 w-6 animate-spin text-primary" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+        } else if (status === 'complete') {
+          iconHtml = '<svg class="h-6 w-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+        } else if (status === 'error') {
+          iconHtml = '<svg class="h-6 w-6 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+        }
+        icon.innerHTML = iconHtml;
+      }
+
+      this.uploadStatus.classList.remove('hidden');
+    }
+
+    private showError(message: string): void {
+      this.updateUploadStatus('error', message);
+      this.uploadProgress.classList.add('hidden');
+      this.processingStatus.classList.add('hidden');
+    }
+
+    private resetUpload(): void {
+      // Clear file
+      this.state.file = null;
+      this.state.cloudflareVideoId = null;
+      this.fileInput.value = '';
+
+      // Reset UI
+      this.fileInfo.classList.add('hidden');
+      const dropZoneContent = this.dropZone.querySelector('.drop-zone-content');
+      if (dropZoneContent) {
+        (dropZoneContent as HTMLElement).classList.remove('hidden');
+      }
+
+      this.uploadProgress.classList.add('hidden');
+      this.uploadStatus.classList.add('hidden');
+      this.processingStatus.classList.add('hidden');
+      this.metadataForm.classList.add('hidden');
+
+      // Clear processing interval
+      if (this.state.processingInterval) {
+        clearInterval(this.state.processingInterval);
+      }
+
+      // Reset form
+      const form = document.getElementById('videoMetadataForm') as HTMLFormElement;
+      if (form) {
+        form.reset();
+      }
+    }
+  }
+
+  // Initialize uploader
+  new VideoUploader();
+</script>
+
+<style>
+  /* Drop zone hover state */
+  .drop-zone.dragover {
+    @apply border-primary bg-primary-light;
+  }
+
+  /* Processing spinner animation */
+  .processing-spinner {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Screen reader only */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* Progress bar animations */
+  .progress-bar,
+  .processing-progress {
+    transition: width 0.3s ease-in-out;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .drop-zone {
+      padding: 2rem 1rem;
+    }
+  }
+</style>

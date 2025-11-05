@@ -1,6 +1,6 @@
 Let's go for the next task. 
 Please check the /web/.specify/memory/tasks.md file to find the last task implemented
-Write the code for the implementation of the task
+Write the code of the next task not implemented yet, or try to find a task not implemented yet in the file.
 Write the test code for the implemented code
 Run the tests, analyse the errors and fix them
 Write the following log files, making sure the files are named starting with T (capital T) and the task number in a three figures number (e.g. T065):

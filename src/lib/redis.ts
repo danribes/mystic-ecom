@@ -206,6 +206,260 @@ export async function checkConnection(): Promise<boolean> {
   }
 }
 
+// ============================================================================
+// Cache Layer (T212)
+// ============================================================================
+
+/**
+ * Cache key namespaces
+ */
+export const CacheNamespace = {
+  PRODUCTS: 'products',
+  COURSES: 'courses',
+  EVENTS: 'events',
+  CART: 'cart',
+  USER: 'user',
+} as const;
+
+/**
+ * Default cache TTLs (in seconds)
+ */
+export const CacheTTL = {
+  PRODUCTS: 300,       // 5 minutes
+  COURSES: 600,        // 10 minutes
+  EVENTS: 600,         // 10 minutes
+  CART: 1800,          // 30 minutes
+  USER: 900,           // 15 minutes
+  SHORT: 60,           // 1 minute
+  MEDIUM: 300,         // 5 minutes
+  LONG: 3600,          // 1 hour
+} as const;
+
+/**
+ * Generate a standardized cache key
+ *
+ * @param namespace - Cache namespace (e.g., 'products', 'courses')
+ * @param identifier - Unique identifier for the cached item
+ * @param suffix - Optional suffix for additional specificity
+ * @returns Formatted cache key
+ *
+ * @example
+ * generateCacheKey('products', 'list', 'all') // => 'products:list:all'
+ * generateCacheKey('courses', '123') // => 'courses:123'
+ */
+export function generateCacheKey(
+  namespace: string,
+  identifier: string,
+  suffix?: string
+): string {
+  const parts = [namespace, identifier];
+  // Only add suffix if it's not undefined and not empty string
+  if (suffix && suffix.length > 0) parts.push(suffix);
+  return parts.join(':');
+}
+
+/**
+ * Get cached data with automatic JSON parsing
+ *
+ * @param key - Cache key
+ * @returns Parsed data or null if not found/expired
+ *
+ * @example
+ * const products = await getCached<Product[]>('products:list:all');
+ * if (products) {
+ *   return products; // Cache hit
+ * }
+ */
+export async function getCached<T = any>(key: string): Promise<T | null> {
+  try {
+    const value = await getJSON<T>(key);
+    if (value) {
+      console.log(`[Cache] HIT: ${key}`);
+    } else {
+      console.log(`[Cache] MISS: ${key}`);
+    }
+    return value;
+  } catch (error) {
+    console.error(`[Cache] Error getting key ${key}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Set cached data with automatic JSON serialization
+ *
+ * @param key - Cache key
+ * @param data - Data to cache (will be JSON serialized)
+ * @param ttlSeconds - Time to live in seconds (optional)
+ *
+ * @example
+ * await setCached('products:list:all', products, CacheTTL.PRODUCTS);
+ */
+export async function setCached<T = any>(
+  key: string,
+  data: T,
+  ttlSeconds?: number
+): Promise<void> {
+  try {
+    await setJSON(key, data, ttlSeconds);
+    console.log(`[Cache] SET: ${key} (TTL: ${ttlSeconds || 'none'}s)`);
+  } catch (error) {
+    console.error(`[Cache] Error setting key ${key}:`, error);
+  }
+}
+
+/**
+ * Invalidate cache by pattern
+ *
+ * Deletes all keys matching the given pattern.
+ * Use with caution as it scans all keys.
+ *
+ * @param pattern - Pattern to match (e.g., 'products:*' or 'courses:123:*')
+ * @returns Number of keys deleted
+ *
+ * @example
+ * // Invalidate all product caches
+ * await invalidateCache('products:*');
+ *
+ * // Invalidate specific course and related caches
+ * await invalidateCache('courses:123*');
+ */
+export async function invalidateCache(pattern: string): Promise<number> {
+  try {
+    const deletedCount = await delPattern(pattern);
+    console.log(`[Cache] INVALIDATE: ${pattern} (${deletedCount} keys deleted)`);
+    return deletedCount;
+  } catch (error) {
+    console.error(`[Cache] Error invalidating pattern ${pattern}:`, error);
+    return 0;
+  }
+}
+
+/**
+ * Invalidate all caches for a specific namespace
+ *
+ * @param namespace - Cache namespace to invalidate
+ * @returns Number of keys deleted
+ *
+ * @example
+ * await invalidateNamespace(CacheNamespace.PRODUCTS);
+ */
+export async function invalidateNamespace(namespace: string): Promise<number> {
+  return await invalidateCache(`${namespace}:*`);
+}
+
+/**
+ * Get or set cached data (cache-aside pattern)
+ *
+ * Checks cache first, if miss, calls the provided function,
+ * caches the result, and returns it.
+ *
+ * @param key - Cache key
+ * @param fetchFn - Function to fetch data on cache miss
+ * @param ttlSeconds - Time to live in seconds
+ * @returns Cached or freshly fetched data
+ *
+ * @example
+ * const products = await getOrSet(
+ *   'products:list:all',
+ *   () => fetchProductsFromDB(),
+ *   CacheTTL.PRODUCTS
+ * );
+ */
+export async function getOrSet<T = any>(
+  key: string,
+  fetchFn: () => Promise<T>,
+  ttlSeconds?: number
+): Promise<T> {
+  // Try to get from cache
+  const cached = await getCached<T>(key);
+  if (cached !== null) {
+    return cached;
+  }
+
+  // Cache miss - fetch data
+  console.log(`[Cache] FETCH: ${key}`);
+  const data = await fetchFn();
+
+  // Store in cache
+  await setCached(key, data, ttlSeconds);
+
+  return data;
+}
+
+/**
+ * Flush all caches
+ *
+ * WARNING: This will delete ALL keys in the Redis database.
+ * Use only in development or for complete cache resets.
+ *
+ * @returns true if successful
+ */
+export async function flushAllCache(): Promise<boolean> {
+  try {
+    const redis = await getRedisClient();
+    await redis.flushDb();
+    console.log('[Cache] FLUSH: All caches cleared');
+    return true;
+  } catch (error) {
+    console.error('[Cache] Error flushing cache:', error);
+    return false;
+  }
+}
+
+/**
+ * Get cache statistics
+ *
+ * @returns Cache statistics including total keys and memory usage
+ */
+export async function getCacheStats(): Promise<{
+  totalKeys: number;
+  keysByNamespace: Record<string, number>;
+  memoryUsage?: string;
+}> {
+  try {
+    const redis = await getRedisClient();
+    const allKeys = await redis.keys('*');
+    const totalKeys = allKeys.length;
+
+    // Count keys by namespace
+    const keysByNamespace: Record<string, number> = {};
+    for (const key of allKeys) {
+      const namespace = key.split(':')[0];
+      if (namespace) {
+        keysByNamespace[namespace] = (keysByNamespace[namespace] || 0) + 1;
+      }
+    }
+
+    // Get memory info (requires INFO command)
+    let memoryUsage: string | undefined;
+    try {
+      const info = await redis.info('memory');
+      if (info) {
+        const match = info.match(/used_memory_human:(.+)/);
+        if (match && match[1]) {
+          memoryUsage = match[1].trim();
+        }
+      }
+    } catch (err) {
+      // INFO command might not be available in all Redis setups
+      console.warn('[Cache] Could not get memory usage:', err);
+    }
+
+    return {
+      totalKeys,
+      keysByNamespace,
+      memoryUsage,
+    };
+  } catch (error) {
+    console.error('[Cache] Error getting cache stats:', error);
+    return {
+      totalKeys: 0,
+      keysByNamespace: {},
+    };
+  }
+}
+
 // Export client for advanced usage
 export { client };
 export default getRedisClient;

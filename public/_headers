@@ -1,0 +1,79 @@
+# Security Headers for Cloudflare Pages
+# Task: T217 - Add security headers to production deployment
+# Last Updated: 2025-11-03
+#
+# These headers are automatically applied by Cloudflare Pages to all responses.
+# See: https://developers.cloudflare.com/pages/platform/headers/
+
+# Apply to all routes
+/*
+  # Prevent clickjacking attacks by disallowing the site to be framed
+  X-Frame-Options: DENY
+
+  # Prevent MIME type sniffing
+  X-Content-Type-Options: nosniff
+
+  # Enable XSS protection in older browsers (legacy, modern browsers use CSP)
+  X-XSS-Protection: 1; mode=block
+
+  # Control how much referrer information is sent
+  Referrer-Policy: strict-origin-when-cross-origin
+
+  # Restrict access to browser features and APIs
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()
+
+  # Content Security Policy - Controls what resources can be loaded
+  # Note: 'unsafe-inline' is needed for Astro's inline scripts and styles
+  # Stripe domains are whitelisted for payment processing
+  # Cloudflare Stream domains are whitelisted for video delivery (T192)
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com https://embed.cloudflarestream.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob: https://videodelivery.net https://cloudflarestream.com; font-src 'self' data:; connect-src 'self' https://api.stripe.com https://checkout.stripe.com https://videodelivery.net https://api.cloudflare.com; frame-src https://js.stripe.com https://checkout.stripe.com https://*.cloudflarestream.com https://customer-*.cloudflarestream.com; media-src 'self' https://videodelivery.net https://*.cloudflarestream.com blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests;
+
+  # Strict Transport Security - Force HTTPS for 1 year
+  # includeSubDomains: Apply to all subdomains
+  # preload: Allow inclusion in browser HSTS preload lists
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+
+  # Cache control for security-sensitive resources
+  Cache-Control: no-cache, no-store, must-revalidate
+
+  # Cross-Origin policies
+  Cross-Origin-Embedder-Policy: require-corp
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+
+# Static assets can be cached longer
+/uploads/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/favicon.svg
+  Cache-Control: public, max-age=86400
+
+# API endpoints should not be cached
+/api/*
+  Cache-Control: no-cache, no-store, must-revalidate, private
+
+# T192: Video Delivery Optimization
+# Video thumbnails - cache for 7 days with revalidation
+/thumbnails/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+  Accept: image/webp, image/jpeg, image/png
+
+# WebP thumbnails - cache for 30 days (immutable)
+/*.webp
+  Cache-Control: public, max-age=2592000, immutable
+  Vary: Accept
+
+# Video posters/previews - cache for 7 days
+/video-posters/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+# Cloudflare Stream HLS manifests - short cache with revalidation
+/*.m3u8
+  Cache-Control: public, max-age=10, stale-while-revalidate=60
+
+# Cloudflare Stream video segments - cache for 1 year
+/*.ts
+  Cache-Control: public, max-age=31536000, immutable

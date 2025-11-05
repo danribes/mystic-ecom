@@ -1,0 +1,1641 @@
+openapi: 3.0.3
+info:
+  title: Spirituality Platform API
+  description: |
+    REST API for the Spirituality Platform - managing courses, digital products, events, bookings, and user accounts.
+
+    ## Authentication
+    Most endpoints require authentication via session cookies. Admin endpoints require admin privileges.
+
+    ## Rate Limiting
+    API endpoints are rate-limited to prevent abuse. See individual endpoints for specific limits.
+
+    ## Caching
+    Many read endpoints implement caching with Redis. Cache TTLs vary by resource type.
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@spirituality-platform.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:4321/api
+    description: Development server
+  - url: https://api.spirituality-platform.com/api
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication and session management
+  - name: Cart
+    description: Shopping cart operations
+  - name: Checkout
+    description: Payment and order processing
+  - name: Courses
+    description: Course catalog, enrollment, and progress tracking
+  - name: Products
+    description: Digital product catalog and downloads
+  - name: Events
+    description: Event listings and bookings
+  - name: Reviews
+    description: Course and product reviews
+  - name: User
+    description: User profile management
+  - name: Admin
+    description: Admin-only operations (requires admin role)
+  - name: Health
+    description: Health check and monitoring
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check endpoint
+      description: Returns system health status including database and Redis connectivity
+      operationId: getHealth
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: System is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register new user
+      description: Creates a new user account and sends verification email
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name:
+                  type: string
+                  minLength: 2
+                  maxLength: 100
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                  description: Must contain uppercase, lowercase, number, and special character
+                phone:
+                  type: string
+                  pattern: '^\+?[1-9]\d{1,14}$'
+                  description: Optional phone number in E.164 format
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  userId:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: User login
+      description: Authenticates user and creates session
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                rememberMe:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  user:
+                    $ref: '#/components/schemas/User'
+          headers:
+            Set-Cookie:
+              description: Session cookie
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: User logout
+      description: Destroys user session
+      operationId: logout
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /auth/forgot-password:
+    post:
+      tags: [Authentication]
+      summary: Request password reset
+      description: Sends password reset email to user
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Reset email sent (or email not found - same response for security)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+  /auth/reset-password:
+    post:
+      tags: [Authentication]
+      summary: Reset password with token
+      description: Resets user password using token from email
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token:
+                  type: string
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/verify-email:
+    get:
+      tags: [Authentication]
+      summary: Verify email address
+      description: Verifies user email using token from email
+      operationId: verifyEmail
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Email verified successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/resend-verification:
+    post:
+      tags: [Authentication]
+      summary: Resend verification email
+      description: Resends verification email to user
+      operationId: resendVerification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Verification email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+  /cart:
+    get:
+      tags: [Cart]
+      summary: Get cart contents
+      description: Returns items in user's shopping cart
+      operationId: getCart
+      responses:
+        '200':
+          description: Cart retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CartItem'
+                  total:
+                    type: number
+                    format: double
+
+  /cart/add:
+    post:
+      tags: [Cart]
+      summary: Add item to cart
+      description: Adds a course or digital product to cart
+      operationId: addToCart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [itemType, itemId]
+              properties:
+                itemType:
+                  type: string
+                  enum: [course, product]
+                itemId:
+                  type: string
+                  format: uuid
+                quantity:
+                  type: integer
+                  minimum: 1
+                  default: 1
+      responses:
+        '200':
+          description: Item added to cart
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  cartId:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /cart/remove:
+    post:
+      tags: [Cart]
+      summary: Remove item from cart
+      description: Removes an item from the shopping cart
+      operationId: removeFromCart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [itemId]
+              properties:
+                itemId:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Item removed from cart
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /checkout/create-session:
+    post:
+      tags: [Checkout]
+      summary: Create Stripe checkout session
+      description: Creates a Stripe checkout session for cart items
+      operationId: createCheckoutSession
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  sessionId:
+                    type: string
+                  url:
+                    type: string
+                    format: uri
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /checkout/webhook:
+    post:
+      tags: [Checkout]
+      summary: Stripe webhook handler
+      description: Handles Stripe webhook events for payment processing
+      operationId: handleWebhook
+      parameters:
+        - name: stripe-signature
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Stripe event object
+      responses:
+        '200':
+          description: Webhook processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /courses:
+    get:
+      tags: [Courses]
+      summary: List all courses
+      description: Returns paginated list of published courses
+      operationId: listCourses
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: [beginner, intermediate, advanced]
+      responses:
+        '200':
+          description: Courses retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  courses:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Course'
+                  total:
+                    type: integer
+
+  /courses/featured:
+    get:
+      tags: [Courses]
+      summary: Get featured courses
+      description: Returns list of featured courses
+      operationId: getFeaturedCourses
+      responses:
+        '200':
+          description: Featured courses retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  courses:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Course'
+
+  /courses/{id}:
+    get:
+      tags: [Courses]
+      summary: Get course by ID
+      description: Returns detailed course information
+      operationId: getCourseById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Course found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /courses/slug/{slug}:
+    get:
+      tags: [Courses]
+      summary: Get course by slug
+      description: Returns course information by slug
+      operationId: getCourseBySlug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Course found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /courses/{courseId}/progress:
+    get:
+      tags: [Courses]
+      summary: Get course progress
+      description: Returns user's progress for a course
+      operationId: getCourseProgress
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Progress retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  progress:
+                    type: number
+                    format: double
+                  completedLessons:
+                    type: integer
+                  totalLessons:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /lessons/{lessonId}/start:
+    post:
+      tags: [Courses]
+      summary: Start lesson
+      description: Marks lesson as started
+      operationId: startLesson
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lesson started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /lessons/{lessonId}/complete:
+    post:
+      tags: [Courses]
+      summary: Complete lesson
+      description: Marks lesson as completed
+      operationId: completeLesson
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lesson completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /lessons/{lessonId}/time:
+    post:
+      tags: [Courses]
+      summary: Track lesson time
+      description: Tracks time spent on lesson
+      operationId: trackLessonTime
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [timeSpent]
+              properties:
+                timeSpent:
+                  type: integer
+                  description: Time spent in seconds
+      responses:
+        '200':
+          description: Time tracked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /products/download/{id}:
+    get:
+      tags: [Products]
+      summary: Download digital product
+      description: Downloads a purchased digital product
+      operationId: downloadProduct
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Product download URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  downloadUrl:
+                    type: string
+                    format: uri
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /events/book:
+    post:
+      tags: [Events]
+      summary: Book an event
+      description: Creates a booking for an event
+      operationId: bookEvent
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eventId, attendees]
+              properties:
+                eventId:
+                  type: string
+                  format: uuid
+                attendees:
+                  type: integer
+                  minimum: 1
+      responses:
+        '200':
+          description: Event booked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  bookingId:
+                    type: string
+                    format: uuid
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /reviews/submit:
+    post:
+      tags: [Reviews]
+      summary: Submit review
+      description: Submit a review for a course or product
+      operationId: submitReview
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [itemType, itemId, rating, comment]
+              properties:
+                itemType:
+                  type: string
+                  enum: [course, product]
+                itemId:
+                  type: string
+                  format: uuid
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+                  minLength: 10
+                  maxLength: 1000
+      responses:
+        '201':
+          description: Review submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  reviewId:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /user/profile:
+    get:
+      tags: [User]
+      summary: Get user profile
+      description: Returns authenticated user's profile
+      operationId: getUserProfile
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags: [User]
+      summary: Update user profile
+      description: Updates authenticated user's profile
+      operationId: updateUserProfile
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 2
+                email:
+                  type: string
+                  format: email
+                phone:
+                  type: string
+                  pattern: '^\\+?[1-9]\\d{1,14}$'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /search:
+    get:
+      tags: [Courses, Products]
+      summary: Search courses and products
+      description: Full-text search across courses and digital products
+      operationId: search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+          description: Search query
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [all, courses, products]
+            default: all
+          description: Filter by content type
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  results:
+                    type: object
+                    properties:
+                      courses:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Course'
+                      products:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Product'
+
+  /admin/orders:
+    get:
+      tags: [Admin]
+      summary: List all orders
+      description: Returns paginated list of all orders (admin only)
+      operationId: listOrders
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, completed, payment_failed, refunded]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Orders retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  orders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/cache:
+    get:
+      tags: [Admin]
+      summary: Get cache statistics
+      description: Returns cache hit rates and key counts (admin only)
+      operationId: getCacheStats
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Cache stats retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  stats:
+                    type: object
+                    properties:
+                      hits:
+                        type: integer
+                      misses:
+                        type: integer
+                      totalKeys:
+                        type: integer
+                      keysByNamespace:
+                        type: object
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Admin]
+      summary: Invalidate cache
+      description: Flush all caches or specific namespace (admin only)
+      operationId: invalidateCache
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [flush, invalidate]
+                namespace:
+                  type: string
+                  description: Required if action is 'invalidate'
+      responses:
+        '200':
+          description: Cache invalidated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  keysDeleted:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/query-stats:
+    get:
+      tags: [Admin]
+      summary: Get query performance statistics
+      description: Returns database query performance metrics (admin only)
+      operationId: getQueryStats
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Query stats retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  query:
+                    type: object
+                    properties:
+                      totalQueries:
+                        type: integer
+                      averageQueriesPerRequest:
+                        type: number
+                      slowQueries:
+                        type: integer
+                      slowQueryPercentage:
+                        type: number
+                  cache:
+                    type: object
+                    properties:
+                      hitRate:
+                        type: number
+                      hits:
+                        type: integer
+                      misses:
+                        type: integer
+                  performance:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        enum: [excellent, good, fair, poor]
+                      recommendations:
+                        type: array
+                        items:
+                          type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/products:
+    get:
+      tags: [Admin]
+      summary: List all products (admin)
+      description: Returns all digital products including unpublished (admin only)
+      operationId: listAdminProducts
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Products retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  products:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/products/{id}:
+    put:
+      tags: [Admin]
+      summary: Update product
+      description: Updates product details (admin only)
+      operationId: updateProduct
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                price:
+                  type: number
+                isPublished:
+                  type: boolean
+      responses:
+        '200':
+          description: Product updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    delete:
+      tags: [Admin]
+      summary: Delete product
+      description: Deletes a product (admin only)
+      operationId: deleteProduct
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Product deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/courses:
+    get:
+      tags: [Admin]
+      summary: List all courses (admin)
+      description: Returns all courses including unpublished (admin only)
+      operationId: listAdminCourses
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Courses retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  courses:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Course'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/events:
+    get:
+      tags: [Admin]
+      summary: List all events (admin)
+      description: Returns all events (admin only)
+      operationId: listAdminEvents
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Events retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/events/{id}:
+    put:
+      tags: [Admin]
+      summary: Update event
+      description: Updates event details (admin only)
+      operationId: updateEvent
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                date:
+                  type: string
+                  format: date-time
+                capacity:
+                  type: integer
+      responses:
+        '200':
+          description: Event updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    delete:
+      tags: [Admin]
+      summary: Delete event
+      description: Deletes an event (admin only)
+      operationId: deleteEvent
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Event deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/reviews/approve:
+    post:
+      tags: [Admin]
+      summary: Approve review
+      description: Approves a pending review (admin only)
+      operationId: approveReview
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reviewId]
+              properties:
+                reviewId:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Review approved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/reviews/reject:
+    post:
+      tags: [Admin]
+      summary: Reject review
+      description: Rejects a pending review (admin only)
+      operationId: rejectReview
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reviewId]
+              properties:
+                reviewId:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Review rejected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: session
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [user, admin]
+        isVerified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    Course:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: double
+        level:
+          type: string
+          enum: [beginner, intermediate, advanced]
+        isPublished:
+          type: boolean
+        rating:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 5
+        reviewCount:
+          type: integer
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: double
+        productType:
+          type: string
+          enum: [ebook, audio, video, pdf]
+        isPublished:
+          type: boolean
+
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+          format: date-time
+        location:
+          type: string
+        capacity:
+          type: integer
+        price:
+          type: number
+          format: double
+        availableSpots:
+          type: integer
+        isPublished:
+          type: boolean
+
+    CartItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        itemType:
+          type: string
+          enum: [course, product]
+        itemId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        price:
+          type: number
+          format: double
+        quantity:
+          type: integer
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        totalAmount:
+          type: number
+          format: double
+        status:
+          type: string
+          enum: [pending, completed, payment_failed, refunded]
+        createdAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderId:
+          type: string
+          format: uuid
+        itemType:
+          type: string
+          enum: [course, product, event]
+        title:
+          type: string
+        price:
+          type: number
+          format: double
+        quantity:
+          type: integer
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        checks:
+          type: object
+          properties:
+            database:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [up, down]
+                responseTime:
+                  type: integer
+            redis:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [up, down]
+                responseTime:
+                  type: integer
+        uptime:
+          type: integer
+        environment:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          default: false
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: Unauthorized - authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    RateLimited:
+      description: Too many requests - rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

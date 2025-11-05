@@ -27,6 +27,7 @@ import { getSessionFromRequest } from '@/lib/auth/session';
 import { ReviewService } from '@/lib/reviews';
 import { getPool } from '@/lib/db';
 import { sendReviewApprovalEmail } from '@/lib/email';
+import { withCSRF } from '@/lib/csrf';
 import {
   ValidationError,
   AuthenticationError,
@@ -36,7 +37,7 @@ import {
   logError,
 } from '@/lib/errors';
 
-export const PUT: APIRoute = async ({ request, cookies }) => {
+const putHandler: APIRoute = async ({ request, cookies }) => {
   try {
     // Check authentication
     const session = await getSessionFromRequest(cookies);
@@ -138,3 +139,6 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     );
   }
 };
+
+// Export handler with CSRF protection (T138)
+export const PUT = withCSRF(putHandler);

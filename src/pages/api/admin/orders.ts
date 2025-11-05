@@ -1,17 +1,19 @@
 /**
  * T072: Admin Orders API Endpoint
- * 
+ *
  * GET /api/admin/orders
  * - List all orders with filtering
  * - Supports query parameters: status, search, startDate, endDate, itemType
  * - Returns JSON by default
  * - Returns CSV when format=csv query parameter is present
  * - Admin authentication required
+ *
+ * Security: T204 - Uses centralized admin authorization middleware
  */
 
 import type { APIRoute } from 'astro';
 import { searchOrders } from '@/services/order.service';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { withAdminAuth } from '@/lib/adminAuth';
 import type { OrderStatus } from '@/types';
 import { z } from 'zod';
 
@@ -99,35 +101,10 @@ function ordersToCSV(orders: any[]): string {
  * GET /api/admin/orders
  * List all orders with filtering and optional CSV export
  */
-export const GET: APIRoute = async ({ request, url, cookies }) => {
+const handler: APIRoute = async ({ request, url, cookies, locals }) => {
   try {
-    // Check authentication
-    const session = await getSessionFromRequest(cookies);
-    
-    if (!session) {
-      return new Response(
-        JSON.stringify({
-          error: 'Authentication required',
-        }),
-        {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    // Check admin role
-    if (session.role !== 'admin') {
-      return new Response(
-        JSON.stringify({
-          error: 'Admin access required',
-        }),
-        {
-          status: 403,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-    }
+    // Admin authentication handled by withAdminAuth middleware
+    // Session available in locals.session
 
     // Parse and validate query parameters
     const queryParams = Object.fromEntries(url.searchParams.entries());
@@ -209,3 +186,6 @@ export const GET: APIRoute = async ({ request, url, cookies }) => {
     );
   }
 };
+
+// Export handler wrapped with admin authorization middleware
+export const GET = withAdminAuth(handler);

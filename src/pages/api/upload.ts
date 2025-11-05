@@ -1,11 +1,13 @@
 /**
  * File Upload API Endpoint
- * 
+ *
  * POST /api/upload
  * - Upload files (images, documents, videos) for courses
  * - Validates file types and sizes
  * - Stores files in local uploads directory
  * - Returns public URL for the uploaded file
+ *
+ * Security: T199 - Rate limited to 10 uploads per 10 minutes per IP
  */
 
 import type { APIRoute } from 'astro';
@@ -13,6 +15,8 @@ import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { rateLimit, RateLimitProfiles } from '@/lib/ratelimit';
+import { withCSRF } from '@/lib/csrf';
 
 // ==================== Configuration ====================
 
@@ -81,7 +85,36 @@ function getFileCategory(mimeType: string): string {
  * POST /api/upload
  * Upload file and return public URL
  */
-export const POST: APIRoute = async ({ request }) => {
+const postHandler: APIRoute = async (context) => {
+  const { request } = context;
+
+  // Rate limiting: 10 uploads per 10 minutes (prevents storage abuse)
+  const rateLimitResult = await rateLimit(context, RateLimitProfiles.UPLOAD);
+  if (!rateLimitResult.allowed) {
+    const retryAfter = rateLimitResult.resetAt - Math.floor(Date.now() / 1000);
+    console.warn('[UPLOAD] Rate limit exceeded:', {
+      ip: context.clientAddress,
+      resetAt: new Date(rateLimitResult.resetAt * 1000).toISOString(),
+    });
+
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: 'Too many upload attempts. Please try again later.',
+        code: 'RATE_LIMIT_EXCEEDED',
+        resetAt: rateLimitResult.resetAt,
+        retryAfter: retryAfter,
+      }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': String(retryAfter > 0 ? retryAfter : 1),
+        },
+      }
+    );
+  }
+
   try {
     // Check authentication and authorization
     if (!isAuthenticated(request)) {
@@ -202,3 +235,6 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 };
+
+// Export handler with CSRF protection (T138)
+export const POST = withCSRF(postHandler);

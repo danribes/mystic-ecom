@@ -1,0 +1,270 @@
+---
+/**
+ * OptimizedImage Component
+ *
+ * A component for optimized image delivery with:
+ * - Lazy loading
+ * - Responsive images (srcset)
+ * - WebP format with fallbacks
+ * - Layout shift prevention
+ * - Blur-up placeholder (optional)
+ *
+ * Part of T142: Optimize image loading
+ *
+ * @example Basic usage
+ * <OptimizedImage
+ *   src="/images/course.jpg"
+ *   alt="Course thumbnail"
+ * />
+ *
+ * @example With preset
+ * <OptimizedImage
+ *   src="/images/hero.jpg"
+ *   alt="Hero image"
+ *   preset="hero"
+ * />
+ *
+ * @example Custom configuration
+ * <OptimizedImage
+ *   src="/images/product.jpg"
+ *   alt="Product image"
+ *   widths={[400, 800, 1200]}
+ *   sizes="(max-width: 768px) 100vw, 50vw"
+ *   aspectRatio="4/3"
+ *   loading="eager"
+ * />
+ */
+
+import {
+  generateResponsiveImageData,
+  getPreset,
+  isValidImageUrl,
+  generateBlurPlaceholder,
+  shouldLazyLoad,
+  type ImageOptimizationOptions
+} from '@/lib/imageOptimization';
+
+interface Props extends Partial<ImageOptimizationOptions> {
+  /**
+   * Image source URL
+   */
+  src: string;
+
+  /**
+   * Alt text for accessibility (required)
+   */
+  alt: string;
+
+  /**
+   * Preset configuration: 'hero', 'card', 'thumbnail', 'avatar', 'fullWidth'
+   */
+  preset?: 'hero' | 'card' | 'thumbnail' | 'avatar' | 'fullWidth';
+
+  /**
+   * Enable blur-up placeholder effect
+   */
+  blurPlaceholder?: boolean;
+
+  /**
+   * Image index (for auto lazy loading)
+   */
+  index?: number;
+
+  /**
+   * Additional CSS classes
+   */
+  class?: string;
+
+  /**
+   * Image width in pixels (for intrinsic sizing)
+   */
+  width?: number;
+
+  /**
+   * Image height in pixels (for intrinsic sizing)
+   */
+  height?: number;
+
+  /**
+   * Object fit CSS property
+   */
+  objectFit?: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down';
+
+  /**
+   * Object position CSS property
+   */
+  objectPosition?: string;
+}
+
+const {
+  src,
+  alt,
+  preset,
+  blurPlaceholder = false,
+  index,
+  class: className,
+  width,
+  height,
+  objectFit = 'cover',
+  objectPosition = 'center',
+  ...options
+} = Astro.props;
+
+// Validate image URL
+if (!isValidImageUrl(src)) {
+  console.warn(`[OptimizedImage] Invalid image URL: ${src}`);
+  // Render nothing for invalid URLs
+  return null;
+}
+
+// Apply preset if provided
+const presetOptions = preset ? getPreset(preset) : {};
+const mergedOptions: ImageOptimizationOptions = {
+  src,
+  alt,
+  className,
+  ...presetOptions,
+  ...options
+};
+
+// Generate responsive image data
+const imageData = generateResponsiveImageData(mergedOptions);
+
+// Determine final loading strategy
+const finalLoading = shouldLazyLoad(imageData.loading, index);
+
+// Generate blur placeholder if enabled
+const placeholder = blurPlaceholder ? generateBlurPlaceholder() : undefined;
+
+// Parse aspect ratio for padding trick
+const aspectPaddingPercent = imageData.aspectRatio
+  ? `${(parseFloat(imageData.aspectRatio.split('/')[1]) / parseFloat(imageData.aspectRatio.split('/')[0])) * 100}%`
+  : undefined;
+
+// Combine CSS classes
+const imgClasses = [
+  imageData.className,
+  objectFit !== 'cover' ? `object-${objectFit}` : '',
+  'transition-opacity duration-300'
+].filter(Boolean).join(' ');
+---
+
+{imageData.srcsetWebP ? (
+  <!-- Picture element with WebP support -->
+  <picture class={aspectPaddingPercent ? 'relative block overflow-hidden' : ''}>
+    {aspectPaddingPercent && (
+      <div style={`padding-bottom: ${aspectPaddingPercent}`} />
+    )}
+
+    <!-- WebP source -->
+    <source
+      type="image/webp"
+      srcset={imageData.srcsetWebP}
+      sizes={imageData.sizes}
+    />
+
+    <!-- Fallback source -->
+    <source
+      type="image/jpeg"
+      srcset={imageData.srcset}
+      sizes={imageData.sizes}
+    />
+
+    <!-- Fallback img element -->
+    <img
+      src={imageData.src}
+      srcset={imageData.srcset}
+      sizes={imageData.sizes}
+      alt={imageData.alt}
+      loading={finalLoading}
+      decoding="async"
+      class:list={[imgClasses, aspectPaddingPercent ? 'absolute inset-0 w-full h-full' : '']}
+      style={placeholder ? `background-image: url('${placeholder}'); background-size: cover;` : `object-position: ${objectPosition};`}
+      width={width}
+      height={height}
+      fetchpriority={imageData.fetchpriority}
+    />
+  </picture>
+) : (
+  <!-- Simple img element without WebP -->
+  <div class={aspectPaddingPercent ? 'relative block overflow-hidden' : ''}>
+    {aspectPaddingPercent && (
+      <div style={`padding-bottom: ${aspectPaddingPercent}`} />
+    )}
+
+    <img
+      src={imageData.src}
+      srcset={imageData.srcset}
+      sizes={imageData.sizes}
+      alt={imageData.alt}
+      loading={finalLoading}
+      decoding="async"
+      class:list={[imgClasses, aspectPaddingPercent ? 'absolute inset-0 w-full h-full' : '']}
+      style={placeholder ? `background-image: url('${placeholder}'); background-size: cover;` : `object-position: ${objectPosition};`}
+      width={width}
+      height={height}
+      fetchpriority={imageData.fetchpriority}
+    />
+  </div>
+)}
+
+<style>
+  /* Blur-up animation */
+  img[style*="background-image"] {
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+
+  /* Fade in when image loads */
+  img {
+    opacity: 0;
+  }
+
+  img[loading="lazy"] {
+    opacity: 1;
+  }
+
+  img.loaded {
+    opacity: 1;
+  }
+
+  /* Object fit utilities */
+  .object-contain {
+    object-fit: contain;
+  }
+
+  .object-cover {
+    object-fit: cover;
+  }
+
+  .object-fill {
+    object-fit: fill;
+  }
+
+  .object-none {
+    object-fit: none;
+  }
+
+  .object-scale-down {
+    object-fit: scale-down;
+  }
+</style>
+
+<script>
+  // Add load event listeners for fade-in effect
+  document.addEventListener('DOMContentLoaded', () => {
+    const images = document.querySelectorAll('img[loading="lazy"]');
+
+    images.forEach((img) => {
+      if (img instanceof HTMLImageElement) {
+        if (img.complete) {
+          img.classList.add('loaded');
+        } else {
+          img.addEventListener('load', () => {
+            img.classList.add('loaded');
+          });
+        }
+      }
+    });
+  });
+</script>

@@ -230,12 +230,10 @@ const inputId = `file-upload-${name}`;
           const formData = new FormData();
           formData.append('file', file);
 
-          const response = await fetch('/api/upload', {
+          // Use course-specific upload endpoint with session-based auth
+          const response = await fetch('/api/courses/upload', {
             method: 'POST',
-            headers: {
-              'Authorization': 'Bearer session', // Session-based auth
-            },
-            body: formData,
+            body: formData, // Session handled by cookies, no need for auth header
           });
 
           // Simulate progress (since fetch doesn't provide upload progress easily)

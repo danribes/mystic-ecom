@@ -1,8 +1,10 @@
 /**
  * User Registration API Endpoint
  * POST /api/auth/register
- * 
+ *
  * Creates a new user account with hashed password.
+ *
+ * Security: T199 - Rate limited to 5 registrations per 15 minutes per IP
  */
 
 import type { APIRoute } from 'astro';
@@ -10,6 +12,8 @@ import { getPool } from '@/lib/db';
 import { hashPassword } from '@/lib/auth/password';
 import { generateVerificationToken, getTokenExpiration } from '@/lib/auth/verification';
 import { sendRegistrationEmail } from '@/lib/email';
+import { rateLimit, RateLimitProfiles } from '@/lib/ratelimit';
+import { validateCSRF } from '@/lib/csrf';
 import { z } from 'zod';
 
 // Validation schema
@@ -28,7 +32,34 @@ const registerSchema = z.object({
   path: ['confirm_password'],
 });
 
-export const POST: APIRoute = async ({ request, redirect }) => {
+export const POST: APIRoute = async (context) => {
+  const { request, redirect } = context;
+
+  // T201: CSRF protection - validate token
+  const csrfValid = await validateCSRF(context);
+  if (!csrfValid) {
+    console.warn('[REGISTER] CSRF validation failed:', {
+      ip: context.clientAddress,
+      url: request.url,
+    });
+
+    return redirect('/register?error=csrf_invalid');
+  }
+
+  // Rate limiting: 5 registrations per 15 minutes (prevents spam)
+  const rateLimitResult = await rateLimit(context, RateLimitProfiles.AUTH);
+  if (!rateLimitResult.allowed) {
+    const retryAfter = rateLimitResult.resetAt - Math.floor(Date.now() / 1000);
+    console.warn('[REGISTER] Rate limit exceeded:', {
+      ip: context.clientAddress,
+      resetAt: new Date(rateLimitResult.resetAt * 1000).toISOString(),
+    });
+
+    return redirect(
+      `/register?error=rate_limit&retry_after=${retryAfter}`
+    );
+  }
+
   try {
     // Parse form data
     const formData = await request.formData();

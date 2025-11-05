@@ -1,14 +1,18 @@
 /**
  * User Login API Endpoint
  * POST /api/auth/login
- * 
+ *
  * Authenticates user credentials and creates session.
+ *
+ * Security: T199 - Rate limited to 5 attempts per 15 minutes per IP
  */
 
 import type { APIRoute } from 'astro';
 import { getPool } from '@/lib/db';
 import { verifyPassword } from '@/lib/auth/password';
 import { login } from '@/lib/auth/session';
+import { rateLimit, RateLimitProfiles } from '@/lib/ratelimit';
+import { validateCSRF } from '@/lib/csrf';
 import { z } from 'zod';
 
 // Validation schema
@@ -19,7 +23,34 @@ const loginSchema = z.object({
   redirect: z.string().nullable().optional(),
 });
 
-export const POST: APIRoute = async ({ request, cookies, redirect }) => {
+export const POST: APIRoute = async (context) => {
+  const { request, cookies, redirect } = context;
+
+  // T201: CSRF protection - validate token
+  const csrfValid = await validateCSRF(context);
+  if (!csrfValid) {
+    console.warn('[LOGIN] CSRF validation failed:', {
+      ip: context.clientAddress,
+      url: request.url,
+    });
+
+    return redirect('/login?error=csrf_invalid');
+  }
+
+  // Rate limiting: 5 attempts per 15 minutes (prevents brute force)
+  const rateLimitResult = await rateLimit(context, RateLimitProfiles.AUTH);
+  if (!rateLimitResult.allowed) {
+    const retryAfter = rateLimitResult.resetAt - Math.floor(Date.now() / 1000);
+    console.warn('[LOGIN] Rate limit exceeded:', {
+      ip: context.clientAddress,
+      resetAt: new Date(rateLimitResult.resetAt * 1000).toISOString(),
+    });
+
+    return redirect(
+      `/login?error=rate_limit&retry_after=${retryAfter}`
+    );
+  }
+
   try {
     // Parse form data
     const formData = await request.formData();

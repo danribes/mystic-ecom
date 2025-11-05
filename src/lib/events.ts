@@ -1,17 +1,27 @@
 /**
  * Event Service
- * 
+ *
  * Business logic for event management including retrieving events,
  * checking capacity, and booking functionality.
+ *
+ * T212: Added caching layer for performance optimization
  */
 
 import { query, transaction } from './db';
-import { 
-  NotFoundError, 
-  ValidationError, 
-  ConflictError, 
-  DatabaseError 
+import {
+  NotFoundError,
+  ValidationError,
+  ConflictError,
+  DatabaseError
 } from './errors';
+import {
+  generateCacheKey,
+  getCached,
+  setCached,
+  invalidateCache,
+  CacheNamespace,
+  CacheTTL,
+} from './redis';
 
 /**
  * Event type definition
@@ -70,11 +80,27 @@ export interface BookingResult {
 
 /**
  * Get all events with optional filters
- * 
+ *
+ * T212: Added caching with 10-minute TTL
+ *
  * @param filters - Optional filters for querying events
  * @returns Array of events matching the filters
  */
 export async function getEvents(filters?: EventFilters): Promise<Event[]> {
+  // Generate cache key based on filters
+  const cacheKey = generateCacheKey(
+    CacheNamespace.EVENTS,
+    'list',
+    JSON.stringify(filters || {})
+  );
+
+  // Try to get from cache
+  const cached = await getCached<Event[]>(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  // Cache miss - fetch from database
   try {
     let queryText = `
       SELECT 
@@ -192,7 +218,12 @@ export async function getEvents(filters?: EventFilters): Promise<Event[]> {
     }
 
     const result = await query<Event>(queryText, params);
-    return result.rows;
+    const events = result.rows;
+
+    // Store in cache
+    await setCached(cacheKey, events, CacheTTL.EVENTS);
+
+    return events;
   } catch (error) {
     console.error('[Events] Error fetching events:', error);
     throw new DatabaseError('Failed to fetch events');
@@ -201,20 +232,36 @@ export async function getEvents(filters?: EventFilters): Promise<Event[]> {
 
 /**
  * Get a single event by ID or slug
- * 
+ *
+ * T212: Added caching with 10-minute TTL
+ *
  * @param identifier - Event ID (UUID) or slug
  * @returns Event object or null if not found
  * @throws NotFoundError if event doesn't exist
  */
 export async function getEventById(identifier: string): Promise<Event> {
-  try {
-    // Determine if identifier is UUID or slug
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+  // Determine if identifier is UUID or slug
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
 
+  // Generate cache key
+  const cacheKey = generateCacheKey(
+    CacheNamespace.EVENTS,
+    isUUID ? identifier : 'slug',
+    isUUID ? undefined : identifier
+  );
+
+  // Try to get from cache
+  const cached = await getCached<Event>(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  // Cache miss - fetch from database
+  try {
     const queryText = `
-      SELECT 
+      SELECT
         id, title, slug, description, price, event_date, duration_hours,
-        venue_name, venue_address, venue_city, venue_country, 
+        venue_name, venue_address, venue_city, venue_country,
         venue_lat, venue_lng, capacity, available_spots, image_url,
         is_published, created_at, updated_at
       FROM events
@@ -227,7 +274,12 @@ export async function getEventById(identifier: string): Promise<Event> {
       throw new NotFoundError('Event');
     }
 
-    return result.rows[0]!;
+    const event = result.rows[0]!;
+
+    // Store in cache
+    await setCached(cacheKey, event, CacheTTL.EVENTS);
+
+    return event;
   } catch (error) {
     if (error instanceof NotFoundError) {
       throw error;
@@ -493,6 +545,75 @@ export async function cancelBooking(
     console.error('[Events] Error cancelling booking:', error);
     throw new DatabaseError('Failed to cancel booking');
   }
+}
+
+// ============================================================================
+// Cache Invalidation (T212)
+// ============================================================================
+
+/**
+ * Invalidate all event caches
+ *
+ * Call this function when:
+ * - An event is created, updated, or deleted
+ * - Event data changes (price, date, venue, etc.)
+ * - Event publication status changes
+ * - Event capacity/availability changes (bookings/cancellations)
+ *
+ * @returns Number of cache keys deleted
+ *
+ * @example
+ * await invalidateEventCache();
+ */
+export async function invalidateEventCache(): Promise<number> {
+  return await invalidateCache(`${CacheNamespace.EVENTS}:*`);
+}
+
+/**
+ * Invalidate cache for a specific event
+ *
+ * More targeted than invalidateEventCache(), only invalidates
+ * caches related to a specific event.
+ *
+ * @param eventId - Event ID to invalidate
+ * @returns Number of cache keys deleted
+ *
+ * @example
+ * await invalidateEventCacheById('event-uuid-123');
+ */
+export async function invalidateEventCacheById(eventId: string): Promise<number> {
+  let deletedCount = 0;
+
+  // Invalidate specific event cache
+  const eventKey = generateCacheKey(CacheNamespace.EVENTS, eventId);
+  deletedCount += await invalidateCache(eventKey);
+
+  // Invalidate all list caches (since event might appear in lists)
+  deletedCount += await invalidateCache(`${CacheNamespace.EVENTS}:list:*`);
+
+  return deletedCount;
+}
+
+/**
+ * Invalidate cache for an event by slug
+ *
+ * @param slug - Event slug to invalidate
+ * @returns Number of cache keys deleted
+ *
+ * @example
+ * await invalidateEventCacheBySlug('my-event');
+ */
+export async function invalidateEventCacheBySlug(slug: string): Promise<number> {
+  let deletedCount = 0;
+
+  // Invalidate specific slug cache
+  const slugKey = generateCacheKey(CacheNamespace.EVENTS, 'slug', slug);
+  deletedCount += await invalidateCache(slugKey);
+
+  // Invalidate all list caches
+  deletedCount += await invalidateCache(`${CacheNamespace.EVENTS}:list:*`);
+
+  return deletedCount;
 }
 
 /**

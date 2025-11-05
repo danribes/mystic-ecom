@@ -1,10 +1,20 @@
 /**
  * Product Service Library
  * Handles digital product operations including fetching, purchasing, and download management
+ *
+ * T212: Added caching layer for performance optimization
  */
 
 import { getPool } from './db';
 import crypto from 'crypto';
+import {
+  generateCacheKey,
+  getCached,
+  setCached,
+  invalidateCache,
+  CacheNamespace,
+  CacheTTL,
+} from './redis';
 
 const pool = getPool();
 
@@ -40,6 +50,8 @@ export interface DownloadLink {
 
 /**
  * Get all published products with optional filtering and sorting
+ *
+ * T212: Added caching with 5-minute TTL
  */
 export async function getProducts(options: {
   type?: 'pdf' | 'audio' | 'video' | 'ebook';
@@ -52,6 +64,20 @@ export async function getProducts(options: {
   limit?: number;
   offset?: number;
 } = {}): Promise<DigitalProduct[]> {
+  // Generate cache key based on options
+  const cacheKey = generateCacheKey(
+    CacheNamespace.PRODUCTS,
+    'list',
+    JSON.stringify(options)
+  );
+
+  // Try to get from cache
+  const cached = await getCached<DigitalProduct[]>(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  // Cache miss - fetch from database
   let query = `
     SELECT * FROM digital_products
     WHERE is_published = true
@@ -137,29 +163,66 @@ export async function getProducts(options: {
   }
 
   const result = await pool.query(query, params);
-  return result.rows;
+  const products = result.rows;
+
+  // Store in cache
+  await setCached(cacheKey, products, CacheTTL.PRODUCTS);
+
+  return products;
 }
 
 /**
  * Get a product by ID
+ *
+ * T212: Added caching with 5-minute TTL
  */
 export async function getProductById(productId: string): Promise<DigitalProduct | null> {
+  const cacheKey = generateCacheKey(CacheNamespace.PRODUCTS, productId);
+
+  // Try to get from cache
+  const cached = await getCached<DigitalProduct | null>(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  // Cache miss - fetch from database
   const result = await pool.query(
     'SELECT * FROM digital_products WHERE id = $1 AND is_published = true',
     [productId]
   );
-  return result.rows[0] || null;
+  const product = result.rows[0] || null;
+
+  // Store in cache
+  await setCached(cacheKey, product, CacheTTL.PRODUCTS);
+
+  return product;
 }
 
 /**
  * Get a product by slug
+ *
+ * T212: Added caching with 5-minute TTL
  */
 export async function getProductBySlug(slug: string): Promise<DigitalProduct | null> {
+  const cacheKey = generateCacheKey(CacheNamespace.PRODUCTS, 'slug', slug);
+
+  // Try to get from cache
+  const cached = await getCached<DigitalProduct | null>(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  // Cache miss - fetch from database
   const result = await pool.query(
     'SELECT * FROM digital_products WHERE slug = $1 AND is_published = true',
     [slug]
   );
-  return result.rows[0] || null;
+  const product = result.rows[0] || null;
+
+  // Store in cache
+  await setCached(cacheKey, product, CacheTTL.PRODUCTS);
+
+  return product;
 }
 
 /**
@@ -240,9 +303,17 @@ export function generateDownloadLink(
   
   // Create a token that includes the product, order, user, and expiry
   const payload = `${productId}:${orderId}:${userId}:${expires}`;
-  
+
   // Sign the payload with a secret
-  const secret = process.env.DOWNLOAD_TOKEN_SECRET || 'your-secret-key-change-in-production';
+  // SECURITY: No fallback allowed - must be set in production
+  const secret = process.env.DOWNLOAD_TOKEN_SECRET;
+  if (!secret) {
+    throw new Error(
+      'DOWNLOAD_TOKEN_SECRET environment variable is required. ' +
+      'Generate a secure random secret with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+    );
+  }
+
   const token = crypto
     .createHmac('sha256', secret)
     .update(payload)
@@ -274,7 +345,16 @@ export function verifyDownloadToken(
   
   // Recreate the expected token
   const payload = `${productId}:${orderId}:${userId}:${expires}`;
-  const secret = process.env.DOWNLOAD_TOKEN_SECRET || 'your-secret-key-change-in-production';
+
+  // SECURITY: No fallback allowed - must be set in production
+  const secret = process.env.DOWNLOAD_TOKEN_SECRET;
+  if (!secret) {
+    throw new Error(
+      'DOWNLOAD_TOKEN_SECRET environment variable is required. ' +
+      'Generate a secure random secret with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+    );
+  }
+
   const expectedToken = crypto
     .createHmac('sha256', secret)
     .update(payload)
@@ -347,6 +427,74 @@ export async function getDownloadHistory(
      ORDER BY downloaded_at DESC`,
     [userId, productId]
   );
-  
+
   return result.rows;
+}
+
+// ============================================================================
+// Cache Invalidation (T212)
+// ============================================================================
+
+/**
+ * Invalidate all product caches
+ *
+ * Call this function when:
+ * - A product is created, updated, or deleted
+ * - Product data changes (price, title, etc.)
+ * - Product publication status changes
+ *
+ * @returns Number of cache keys deleted
+ *
+ * @example
+ * await invalidateProductCache();
+ */
+export async function invalidateProductCache(): Promise<number> {
+  return await invalidateCache(`${CacheNamespace.PRODUCTS}:*`);
+}
+
+/**
+ * Invalidate cache for a specific product
+ *
+ * More targeted than invalidateProductCache(), only invalidates
+ * caches related to a specific product.
+ *
+ * @param productId - Product ID to invalidate
+ * @returns Number of cache keys deleted
+ *
+ * @example
+ * await invalidateProductCacheById('product-123');
+ */
+export async function invalidateProductCacheById(productId: string): Promise<number> {
+  let deletedCount = 0;
+
+  // Invalidate specific product cache
+  const productKey = generateCacheKey(CacheNamespace.PRODUCTS, productId);
+  deletedCount += await invalidateCache(productKey);
+
+  // Invalidate all list caches (since product might appear in lists)
+  deletedCount += await invalidateCache(`${CacheNamespace.PRODUCTS}:list:*`);
+
+  return deletedCount;
+}
+
+/**
+ * Invalidate cache for a product by slug
+ *
+ * @param slug - Product slug to invalidate
+ * @returns Number of cache keys deleted
+ *
+ * @example
+ * await invalidateProductCacheBySlug('my-product');
+ */
+export async function invalidateProductCacheBySlug(slug: string): Promise<number> {
+  let deletedCount = 0;
+
+  // Invalidate specific slug cache
+  const slugKey = generateCacheKey(CacheNamespace.PRODUCTS, 'slug', slug);
+  deletedCount += await invalidateCache(slugKey);
+
+  // Invalidate all list caches
+  deletedCount += await invalidateCache(`${CacheNamespace.PRODUCTS}:list:*`);
+
+  return deletedCount;
 }

@@ -1,21 +1,41 @@
 /**
  * Resend Email Verification API Endpoint
  * POST /api/auth/resend-verification
- * 
+ *
  * Resends verification email to users who haven't verified their email.
+ *
+ * Security: T199 - Rate limited to 3 requests per hour per IP
  */
 
 import type { APIRoute } from 'astro';
 import { getPool } from '@/lib/db';
 import { generateVerificationToken, getTokenExpiration } from '@/lib/auth/verification';
 import { sendRegistrationEmail } from '@/lib/email';
+import { rateLimit, RateLimitProfiles } from '@/lib/ratelimit';
+import { withCSRF } from '@/lib/csrf';
 import { z } from 'zod';
 
 const resendSchema = z.object({
   email: z.string().email('Invalid email address'),
 });
 
-export const POST: APIRoute = async ({ request, redirect }) => {
+const postHandler: APIRoute = async (context) => {
+  const { request, redirect } = context;
+
+  // Rate limiting: 3 requests per hour (prevents email spam)
+  const rateLimitResult = await rateLimit(context, RateLimitProfiles.EMAIL_VERIFY);
+  if (!rateLimitResult.allowed) {
+    const retryAfter = rateLimitResult.resetAt - Math.floor(Date.now() / 1000);
+    console.warn('[RESEND-VERIFICATION] Rate limit exceeded:', {
+      ip: context.clientAddress,
+      resetAt: new Date(rateLimitResult.resetAt * 1000).toISOString(),
+    });
+
+    return redirect(
+      `/login?error=rate_limit&retry_after=${retryAfter}`
+    );
+  }
+
   try {
     // Parse form data
     const formData = await request.formData();
@@ -91,3 +111,6 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     return redirect('/login?error=server_error');
   }
 };
+
+// Export handler with CSRF protection (T138)
+export const POST = withCSRF(postHandler);

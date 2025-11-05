@@ -1,0 +1,107 @@
+# T132: Load Testing Configuration
+# Artillery load testing for 100+ concurrent users
+# Run with: npx artillery run tests/load/artillery-config.yml
+
+config:
+  target: 'http://localhost:4321'
+  phases:
+    # Warm-up phase: Gradually increase to 50 users over 30 seconds
+    - duration: 30
+      arrivalRate: 5
+      rampTo: 50
+      name: "Warm-up phase"
+
+    # Peak load phase: Maintain 100 concurrent users for 60 seconds
+    - duration: 60
+      arrivalRate: 100
+      name: "Peak load - 100 concurrent users"
+
+    # Spike test: Sudden increase to 150 users for 30 seconds
+    - duration: 30
+      arrivalRate: 150
+      name: "Spike test - 150 concurrent users"
+
+    # Cool down: Reduce to 25 users over 30 seconds
+    - duration: 30
+      arrivalRate: 50
+      rampTo: 25
+      name: "Cool down phase"
+
+  # Performance thresholds
+  ensure:
+    maxErrorRate: 5  # Max 5% error rate
+    p95: 1000        # 95th percentile response time < 1000ms
+    p99: 2000        # 99th percentile response time < 2000ms
+
+  # HTTP settings
+  http:
+    timeout: 10
+
+  # Plugins
+  plugins:
+    expect: {}
+    metrics-by-endpoint:
+      stripQueryString: true
+
+# Test scenarios
+scenarios:
+  # Scenario 1: Public user browsing
+  - name: "Browse public pages"
+    weight: 40
+    flow:
+      - get:
+          url: "/"
+          expect:
+            - statusCode: 200
+      - think: 2
+      - get:
+          url: "/courses"
+          expect:
+            - statusCode: 200
+      - think: 3
+      - get:
+          url: "/events"
+          expect:
+            - statusCode: 200
+
+  # Scenario 2: Search functionality
+  - name: "Search courses"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/search?q=programming"
+          expect:
+            - statusCode: 200
+      - think: 2
+      - get:
+          url: "/api/search?q=javascript"
+          expect:
+            - statusCode: 200
+
+  # Scenario 3: View course details
+  - name: "View course details"
+    weight: 30
+    flow:
+      - get:
+          url: "/courses"
+          expect:
+            - statusCode: 200
+      - think: 2
+      # In real scenario, would extract course ID dynamically
+      - get:
+          url: "/api/courses?page=1&limit=20"
+          expect:
+            - statusCode: 200
+
+  # Scenario 4: User authentication flow
+  - name: "User login attempt"
+    weight: 10
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "loadtest{{ $randomNumber() }}@test.com"
+            password: "TestPassword123!"
+          expect:
+            - statusCode: [200, 400, 401]  # Accept various responses
+      - think: 1
