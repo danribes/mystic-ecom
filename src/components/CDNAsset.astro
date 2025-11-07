@@ -1,0 +1,251 @@
+---
+/**
+ * T143: CDN Asset Component
+ *
+ * Astro component for serving assets through CDN with:
+ * - Automatic CDN URL generation
+ * - Cache-Control headers
+ * - Fallback support
+ * - Asset versioning
+ * - Multiple asset type support
+ *
+ * Usage:
+ *   <CDNAsset src="/images/hero.jpg" alt="Hero" type="image" />
+ *   <CDNAsset src="/styles/main.css" type="css" preload />
+ *   <CDNAsset src="/scripts/app.js" type="js" defer />
+ */
+
+import { cdnUrl, getCDN, type AssetType } from '../lib/cdn';
+
+interface Props {
+  /**
+   * Asset source path
+   */
+  src: string;
+
+  /**
+   * Asset type (auto-detected if not specified)
+   */
+  type?: AssetType;
+
+  /**
+   * Alt text (for images)
+   */
+  alt?: string;
+
+  /**
+   * Asset version (for cache busting)
+   */
+  version?: string | boolean;
+
+  /**
+   * CDN region to use
+   */
+  region?: string;
+
+  /**
+   * Enable fallback to local asset
+   */
+  fallback?: boolean;
+
+  /**
+   * Preload the asset
+   */
+  preload?: boolean;
+
+  /**
+   * Async loading (for scripts)
+   */
+  async?: boolean;
+
+  /**
+   * Defer loading (for scripts)
+   */
+  defer?: boolean;
+
+  /**
+   * Additional CSS classes
+   */
+  class?: string;
+
+  /**
+   * Width (for images)
+   */
+  width?: number | string;
+
+  /**
+   * Height (for images)
+   */
+  height?: number | string;
+
+  /**
+   * Loading strategy (for images)
+   */
+  loading?: 'lazy' | 'eager';
+
+  /**
+   * Decoding strategy (for images)
+   */
+  decoding?: 'async' | 'sync' | 'auto';
+
+  /**
+   * Crossorigin attribute
+   */
+  crossorigin?: 'anonymous' | 'use-credentials';
+
+  /**
+   * Integrity hash (SRI - Subresource Integrity)
+   */
+  integrity?: string;
+
+  /**
+   * Additional HTML attributes
+   */
+  [key: string]: any;
+}
+
+const {
+  src,
+  type,
+  alt,
+  version,
+  region,
+  fallback = true,
+  preload = false,
+  async = false,
+  defer = false,
+  class: className,
+  width,
+  height,
+  loading,
+  decoding,
+  crossorigin,
+  integrity,
+  ...rest
+} = Astro.props;
+
+// Get CDN manager
+const cdn = getCDN();
+
+// Determine asset type if not specified
+const assetType = type || cdn.getAssetType(src);
+
+// Generate CDN URL
+const cdnSrc = cdnUrl(src, { type: assetType, version, region, fallback });
+
+// Get cache control header
+const cacheControl = cdn.getCacheControl(assetType);
+
+// Set cache control header in response (if available)
+if (Astro.response) {
+  Astro.response.headers.set('Cache-Control', cacheControl);
+}
+
+// Build common attributes
+const commonAttrs = {
+  class: className,
+  crossorigin,
+  ...(integrity && { integrity }),
+  ...rest,
+};
+---
+
+{assetType === 'image' && (
+  <img
+    src={cdnSrc}
+    alt={alt || ''}
+    width={width}
+    height={height}
+    loading={loading || 'lazy'}
+    decoding={decoding || 'async'}
+    {...commonAttrs}
+  />
+)}
+
+{assetType === 'css' && (
+  <>
+    {preload && (
+      <link
+        rel="preload"
+        href={cdnSrc}
+        as="style"
+        {...(crossorigin && { crossorigin })}
+      />
+    )}
+    <link
+      rel="stylesheet"
+      href={cdnSrc}
+      {...commonAttrs}
+    />
+  </>
+)}
+
+{assetType === 'js' && (
+  <>
+    {preload && (
+      <link
+        rel="preload"
+        href={cdnSrc}
+        as="script"
+        {...(crossorigin && { crossorigin })}
+      />
+    )}
+    <script
+      src={cdnSrc}
+      type="module"
+      {...(async && { async: true })}
+      {...(defer && { defer: true })}
+      {...commonAttrs}
+    />
+  </>
+)}
+
+{assetType === 'font' && (
+  <link
+    rel="preload"
+    href={cdnSrc}
+    as="font"
+    type={`font/${src.split('.').pop()}`}
+    crossorigin="anonymous"
+    {...commonAttrs}
+  />
+)}
+
+{assetType === 'video' && (
+  <video
+    src={cdnSrc}
+    width={width}
+    height={height}
+    {...commonAttrs}
+  >
+    <track kind="captions" />
+  </video>
+)}
+
+{assetType === 'audio' && (
+  <audio
+    src={cdnSrc}
+    {...commonAttrs}
+  >
+    Your browser does not support the audio element.
+  </audio>
+)}
+
+{assetType === 'document' && (
+  <a
+    href={cdnSrc}
+    download
+    {...commonAttrs}
+  >
+    Download {alt || src.split('/').pop()}
+  </a>
+)}
+
+{assetType === 'other' && (
+  <a
+    href={cdnSrc}
+    {...commonAttrs}
+  >
+    {alt || src.split('/').pop()}
+  </a>
+)}

@@ -1,0 +1,701 @@
+---
+/**
+ * Cancellation Policy Page (T150)
+ *
+ * Comprehensive cancellation policy for courses, events, subscriptions, and services.
+ * Last Updated: November 6, 2025
+ */
+
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+const lastUpdated = 'November 6, 2025';
+const effectiveDate = 'November 6, 2025';
+---
+
+<BaseLayout
+  title="Cancellation Policy"
+  description="Learn about our cancellation policies for courses, events, and subscriptions. Understand the procedures, timelines, and what happens when you cancel."
+  keywords="cancellation policy, cancel course, cancel event, cancel subscription, spirituality platform"
+>
+  <div class="container mx-auto px-lg py-2xl max-w-4xl">
+    <!-- Header -->
+    <header class="mb-2xl text-center">
+      <h1 class="mb-md text-4xl font-bold text-text">Cancellation Policy</h1>
+      <p class="text-text-light">
+        Last Updated: <time datetime={effectiveDate}>{lastUpdated}</time>
+      </p>
+    </header>
+
+    <!-- Introduction -->
+    <section class="mb-2xl rounded-xl bg-surface p-xl">
+      <p class="mb-md text-lg leading-relaxed text-text-light">
+        At Spirituality Platform, we understand that plans change. This Cancellation Policy explains how to cancel courses, events, subscriptions, and other services, along with the associated timelines and procedures.
+      </p>
+      <p class="text-lg leading-relaxed text-text-light">
+        For information about refunds related to cancellations, please see our <a href="/refund-policy" class="text-primary hover:underline font-medium">Refund Policy</a>. This policy focuses on the cancellation procedures and what happens to your account and access.
+      </p>
+    </section>
+
+    <!-- Table of Contents -->
+    <nav class="mb-2xl rounded-xl bg-background p-lg" aria-label="Table of Contents">
+      <h2 class="mb-md text-xl font-bold text-text">Table of Contents</h2>
+      <ol class="space-y-xs text-text-light">
+        <li><a href="#course-cancellation" class="hover:text-primary transition-colors">1. Course Enrollment Cancellation</a></li>
+        <li><a href="#event-cancellation" class="hover:text-primary transition-colors">2. Event Booking Cancellation</a></li>
+        <li><a href="#subscription-cancellation" class="hover:text-primary transition-colors">3. Subscription Cancellation</a></li>
+        <li><a href="#account-cancellation" class="hover:text-primary transition-colors">4. Account Closure</a></li>
+        <li><a href="#how-to-cancel" class="hover:text-primary transition-colors">5. How to Cancel</a></li>
+        <li><a href="#after-cancellation" class="hover:text-primary transition-colors">6. What Happens After Cancellation</a></li>
+        <li><a href="#reinstatement" class="hover:text-primary transition-colors">7. Reinstatement</a></li>
+        <li><a href="#we-cancel" class="hover:text-primary transition-colors">8. When We Cancel</a></li>
+        <li><a href="#contact" class="hover:text-primary transition-colors">9. Contact Information</a></li>
+      </ol>
+    </nav>
+
+    <!-- Main Content -->
+    <article class="prose prose-lg max-w-none">
+      <!-- Section 1 -->
+      <section id="course-cancellation" class="mb-2xl scroll-mt-lg">
+        <h2 class="mb-lg text-2xl font-bold text-text">1. Course Enrollment Cancellation</h2>
+        <div class="space-y-md text-text-light leading-relaxed">
+          <h3 class="text-xl font-semibold text-text">1.1 When You Can Cancel</h3>
+          <p>
+            You can cancel a course enrollment at any time, but refund eligibility depends on timing and progress:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Within 30 days + less than 90% complete:</strong> Full refund available</li>
+            <li><strong>After 30 days or more than 90% complete:</strong> No refund, but you retain access</li>
+            <li><strong>Before starting:</strong> Full refund, no questions asked</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">1.2 Cancellation Process</h3>
+          <p>
+            To cancel a course enrollment:
+          </p>
+          <ol class="list-decimal ml-lg space-y-xs">
+            <li>Log in to your account at <a href="/account" class="text-primary hover:underline">spiritualityplatform.com/account</a></li>
+            <li>Go to "My Courses" section</li>
+            <li>Find the course you want to cancel</li>
+            <li>Click "Cancel Enrollment" or "Request Refund"</li>
+            <li>Confirm your cancellation</li>
+            <li>You'll receive an email confirmation within minutes</li>
+          </ol>
+
+          <h3 class="text-xl font-semibold text-text">1.3 What Happens to Your Progress</h3>
+          <p>
+            When you cancel a course:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>If requesting refund:</strong> Access ends immediately, progress deleted after 30 days</li>
+            <li><strong>If keeping access:</strong> Your progress is saved, you can continue learning</li>
+            <li><strong>Certificates:</strong> Completion certificates are revoked if you receive a refund</li>
+            <li><strong>Notes and bookmarks:</strong> Saved if you keep access, deleted if refunded</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">1.4 Course Bundle Cancellations</h3>
+          <p>
+            For course bundles:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>You can cancel the entire bundle within 30 days for full refund</li>
+            <li>Individual course cancellations within bundles are calculated at individual prices</li>
+            <li>If you complete any course beyond 90%, the bundle becomes non-refundable</li>
+            <li>You can cancel access to specific courses while keeping others</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">1.5 Pre-Orders and Upcoming Courses</h3>
+          <p>
+            For courses that haven't started yet:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Full refund available anytime before course launch</li>
+            <li>Automatic refund if course is cancelled or significantly delayed</li>
+            <li>You'll be notified by email if course dates change</li>
+            <li>30-day refund period starts from actual course launch date</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 2 -->
+      <section id="event-cancellation" class="mb-2xl scroll-mt-lg">
+        <h2 class="mb-lg text-2xl font-bold text-text">2. Event Booking Cancellation</h2>
+        <div class="space-y-md text-text-light leading-relaxed">
+          <h3 class="text-xl font-semibold text-text">2.1 Cancellation Deadlines</h3>
+          <p>
+            Event cancellations must be made according to these timelines:
+          </p>
+          <div class="rounded-lg bg-background p-lg my-md">
+            <table class="w-full">
+              <thead>
+                <tr class="border-b border-text/20">
+                  <th class="py-sm px-md text-left text-text">Notice Period</th>
+                  <th class="py-sm px-md text-left text-text">Refund</th>
+                  <th class="py-sm px-md text-left text-text">Status</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-light">
+                <tr class="border-b border-text/10">
+                  <td class="py-sm px-md">30+ days before</td>
+                  <td class="py-sm px-md">100%</td>
+                  <td class="py-sm px-md text-success font-medium">Easy cancel</td>
+                </tr>
+                <tr class="border-b border-text/10">
+                  <td class="py-sm px-md">15-30 days before</td>
+                  <td class="py-sm px-md">75%</td>
+                  <td class="py-sm px-md text-success font-medium">Standard cancel</td>
+                </tr>
+                <tr class="border-b border-text/10">
+                  <td class="py-sm px-md">7-14 days before</td>
+                  <td class="py-sm px-md">50%</td>
+                  <td class="py-sm px-md text-warning font-medium">Late cancel</td>
+                </tr>
+                <tr class="border-b border-text/10">
+                  <td class="py-sm px-md">3-6 days before</td>
+                  <td class="py-sm px-md">25%</td>
+                  <td class="py-sm px-md text-warning font-medium">Very late cancel</td>
+                </tr>
+                <tr>
+                  <td class="py-sm px-md">Less than 3 days</td>
+                  <td class="py-sm px-md">50% credit</td>
+                  <td class="py-sm px-md text-error font-medium">No refund, credit only</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 class="text-xl font-semibold text-text">2.2 How to Cancel Event Bookings</h3>
+          <p>
+            To cancel an event booking:
+          </p>
+          <ol class="list-decimal ml-lg space-y-xs">
+            <li>Log in to your account</li>
+            <li>Navigate to "My Events" or "Upcoming Events"</li>
+            <li>Find the event you want to cancel</li>
+            <li>Click "Cancel Booking"</li>
+            <li>Review the refund amount (based on timeline)</li>
+            <li>Confirm cancellation</li>
+            <li>Receive immediate email confirmation</li>
+          </ol>
+
+          <h3 class="text-xl font-semibold text-text">2.3 Group Bookings</h3>
+          <p>
+            For group event registrations:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Full group cancellation:</strong> Standard timeline applies to entire group</li>
+            <li><strong>Individual cancellation:</strong> Individual participants can cancel based on timeline</li>
+            <li><strong>Group organizer:</strong> The person who booked can cancel anyone in the group</li>
+            <li><strong>Refund distribution:</strong> Refunds go to the original payment method</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">2.4 Transferring Event Registrations</h3>
+          <p>
+            Instead of cancelling, you can transfer your registration:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Transfer to another person:</strong> No fee, must be done 7+ days before event</li>
+            <li><strong>Transfer to different event:</strong> Pay any price difference, $25 admin fee</li>
+            <li><strong>Transfer to future date:</strong> Same event at later date, no fee if available</li>
+            <li><strong>How to transfer:</strong> Contact support with transfer details</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">2.5 Wait-Listed Events</h3>
+          <p>
+            For events where you're on a waiting list:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>You can cancel wait-list position anytime with full refund</li>
+            <li>If you're moved from wait-list to confirmed, standard policy applies</li>
+            <li>You'll have 24 hours to cancel after confirmation for full refund</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 3 -->
+      <section id="subscription-cancellation" class="mb-2xl scroll-mt-lg">
+        <h2 class="mb-lg text-2xl font-bold text-text">3. Subscription Cancellation</h2>
+        <div class="space-y-md text-text-light leading-relaxed">
+          <h3 class="text-xl font-semibold text-text">3.1 When You Can Cancel</h3>
+          <p>
+            You can cancel your subscription at any time:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Anytime:</strong> No penalty for early cancellation</li>
+            <li><strong>No commitment:</strong> No long-term contract required</li>
+            <li><strong>Keep access:</strong> Access continues until end of current billing period</li>
+            <li><strong>No partial refunds:</strong> No refunds for unused days in current period</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">3.2 How to Cancel Subscription</h3>
+          <p>
+            To cancel your subscription:
+          </p>
+          <ol class="list-decimal ml-lg space-y-xs">
+            <li>Log in to your account</li>
+            <li>Go to "Account Settings" → "Subscription"</li>
+            <li>Click "Cancel Subscription"</li>
+            <li>Select reason for cancellation (optional, helps us improve)</li>
+            <li>Confirm cancellation</li>
+            <li>You'll see confirmation on screen and via email</li>
+          </ol>
+
+          <h3 class="text-xl font-semibold text-text">3.3 Subscription Types</h3>
+
+          <div class="rounded-lg bg-background p-lg my-md">
+            <h4 class="font-semibold text-text mb-sm">Monthly Subscriptions</h4>
+            <ul class="list-disc ml-lg space-y-xs mb-md">
+              <li>Cancel anytime, access until end of current month</li>
+              <li>No charge for next month if cancelled before renewal</li>
+              <li>Can reactivate anytime (may require new signup)</li>
+            </ul>
+
+            <h4 class="font-semibold text-text mb-sm">Annual Subscriptions</h4>
+            <ul class="list-disc ml-lg space-y-xs mb-md">
+              <li>Cancel anytime, access until end of current year</li>
+              <li>No prorated refund for remaining months</li>
+              <li>Will not auto-renew after current period ends</li>
+            </ul>
+
+            <h4 class="font-semibold text-text mb-sm">Trial Periods</h4>
+            <ul class="list-disc ml-lg space-y-xs">
+              <li>Cancel during trial = no charge, no commitment</li>
+              <li>Cancel before trial ends to avoid being charged</li>
+              <li>Set calendar reminder for trial end date</li>
+            </ul>
+          </div>
+
+          <h3 class="text-xl font-semibold text-text">3.4 Pause Subscription (Alternative)</h3>
+          <p>
+            Instead of cancelling, you can pause:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Duration:</strong> Pause for 1-6 months</li>
+            <li><strong>No charges:</strong> No billing during pause period</li>
+            <li><strong>Keep settings:</strong> Preferences and history maintained</li>
+            <li><strong>Auto-resume:</strong> Automatically resumes after pause period (or cancel permanently)</li>
+            <li><strong>How to pause:</strong> Account Settings → Subscription → Pause Subscription</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">3.5 Failed Payment Cancellations</h3>
+          <p>
+            If your payment fails:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>We'll retry payment 3 times over 7 days</li>
+            <li>You'll receive email reminders to update payment</li>
+            <li>After 3 failed attempts, subscription automatically cancels</li>
+            <li>You'll have 30 days to reinstate before data deletion</li>
+            <li>Update payment method in Account Settings</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 4 -->
+      <section id="account-cancellation" class="mb-2xl scroll-mt-lg">
+        <h2 class="mb-lg text-2xl font-bold text-text">4. Account Closure</h2>
+        <div class="space-y-md text-text-light leading-relaxed">
+          <h3 class="text-xl font-semibold text-text">4.1 Closing Your Account</h3>
+          <p>
+            You can permanently close your account at any time:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Permanent action:</strong> Cannot be undone after 30-day grace period</li>
+            <li><strong>Access lost:</strong> Lose access to all purchased courses and content</li>
+            <li><strong>Data deletion:</strong> Personal data deleted per GDPR/CCPA (see Privacy Policy)</li>
+            <li><strong>No refunds:</strong> Past purchases are not refunded upon account closure</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">4.2 Before You Close Your Account</h3>
+          <p>
+            Important things to do first:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Download certificates:</strong> Save any completion certificates</li>
+            <li><strong>Export data:</strong> Download your personal data if desired</li>
+            <li><strong>Cancel subscriptions:</strong> Ensure no recurring charges</li>
+            <li><strong>Transfer ownership:</strong> For group purchases, transfer to another admin</li>
+            <li><strong>Use credits:</strong> Any account credits will be forfeited</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">4.3 How to Close Account</h3>
+          <p>
+            To permanently close your account:
+          </p>
+          <ol class="list-decimal ml-lg space-y-xs">
+            <li>Log in to your account</li>
+            <li>Go to "Account Settings" → "Privacy & Security"</li>
+            <li>Scroll to "Account Closure"</li>
+            <li>Click "Close Account"</li>
+            <li>Verify your identity (password or 2FA)</li>
+            <li>Confirm you understand data will be deleted</li>
+            <li>Select reason for closure (optional)</li>
+            <li>Final confirmation: "Yes, close my account"</li>
+          </ol>
+
+          <h3 class="text-xl font-semibold text-text">4.4 Grace Period</h3>
+          <p>
+            After requesting account closure:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>30-day grace period:</strong> Account marked for deletion but not deleted yet</li>
+            <li><strong>Can reactivate:</strong> Log in within 30 days to cancel closure request</li>
+            <li><strong>No access:</strong> Cannot access courses or content during grace period</li>
+            <li><strong>After 30 days:</strong> Account and data permanently deleted</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">4.5 Temporary Deactivation (Alternative)</h3>
+          <p>
+            If you're not ready for permanent deletion:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Deactivate account:</strong> Temporarily disable without deletion</li>
+            <li><strong>Keep purchases:</strong> All purchased content saved</li>
+            <li><strong>Reactivate anytime:</strong> Simply log in to reactivate</li>
+            <li><strong>No time limit:</strong> Can stay deactivated indefinitely</li>
+            <li><strong>How to:</strong> Account Settings → Deactivate Account</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 5 -->
+      <section id="how-to-cancel" class="mb-2xl scroll-mt-lg">
+        <h2 class="mb-lg text-2xl font-bold text-text">5. How to Cancel</h2>
+        <div class="space-y-md text-text-light leading-relaxed">
+          <h3 class="text-xl font-semibold text-text">5.1 Self-Service Cancellation</h3>
+          <p>
+            Most cancellations can be done instantly through your account:
+          </p>
+          <div class="rounded-lg bg-background p-lg my-md">
+            <p class="font-semibold text-text mb-sm">Step-by-Step:</p>
+            <ol class="list-decimal ml-lg space-y-xs">
+              <li>Log in at <a href="/login" class="text-primary hover:underline">spiritualityplatform.com/login</a></li>
+              <li>Go to your dashboard</li>
+              <li>Find the item you want to cancel (course, event, subscription)</li>
+              <li>Click "Cancel" or "Request Refund"</li>
+              <li>Follow the prompts</li>
+              <li>Receive instant confirmation</li>
+            </ol>
+          </div>
+
+          <h3 class="text-xl font-semibold text-text">5.2 Email Cancellation</h3>
+          <p>
+            You can also cancel by email:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Email:</strong> <a href="mailto:cancel@spiritualityplatform.com" class="text-primary hover:underline">cancel@spiritualityplatform.com</a></li>
+            <li><strong>Include:</strong> Account email, what you want to cancel, order/booking number</li>
+            <li><strong>Response time:</strong> Processed within 1 business day</li>
+            <li><strong>Confirmation:</strong> You'll receive email confirmation when processed</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">5.3 Phone Cancellation</h3>
+          <p>
+            For immediate assistance with cancellations:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Phone:</strong> 1-800-SPIRIT-1 (1-800-774-7481)</li>
+            <li><strong>Hours:</strong> Monday-Friday, 9 AM - 6 PM EST</li>
+            <li><strong>Identity verification:</strong> Have your account email and order number ready</li>
+            <li><strong>Instant processing:</strong> Cancellation processed while on the call</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">5.4 Bulk Cancellations</h3>
+          <p>
+            If you need to cancel multiple items:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Contact support for assistance with bulk cancellations</li>
+            <li>Provide list of order numbers or booking IDs</li>
+            <li>We'll process all cancellations and confirm via single email</li>
+            <li>Useful for group organizers or corporate accounts</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">5.5 Third-Party Cancellations</h3>
+          <p>
+            If you purchased through a third party:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Contact the original seller for cancellation</li>
+            <li>Different cancellation policies may apply</li>
+            <li>We cannot process refunds for third-party purchases</li>
+            <li>Access keys can be deactivated upon request from seller</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 6 -->
+      <section id="after-cancellation" class="mb-2xl scroll-mt-lg">
+        <h2 class="mb-lg text-2xl font-bold text-text">6. What Happens After Cancellation</h2>
+        <div class="space-y-md text-text-light leading-relaxed">
+          <h3 class="text-xl font-semibold text-text">6.1 Immediate Effects</h3>
+          <p>
+            When you cancel:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Confirmation email:</strong> Instant confirmation of cancellation</li>
+            <li><strong>Dashboard update:</strong> Status changes immediately</li>
+            <li><strong>Auto-renewal:</strong> Subscriptions marked as "will not renew"</li>
+            <li><strong>Calendar:</strong> Events removed from your event calendar</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">6.2 Access Timeline</h3>
+          <p>
+            When your access ends:
+          </p>
+          <div class="rounded-lg bg-background p-lg my-md">
+            <table class="w-full">
+              <thead>
+                <tr class="border-b border-text/20">
+                  <th class="py-sm px-md text-left text-text">Item Type</th>
+                  <th class="py-sm px-md text-left text-text">Access Ends</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-light">
+                <tr class="border-b border-text/10">
+                  <td class="py-sm px-md">Course (with refund)</td>
+                  <td class="py-sm px-md">Immediately upon cancellation</td>
+                </tr>
+                <tr class="border-b border-text/10">
+                  <td class="py-sm px-md">Course (without refund)</td>
+                  <td class="py-sm px-md">Access remains indefinitely</td>
+                </tr>
+                <tr class="border-b border-text/10">
+                  <td class="py-sm px-md">Event booking</td>
+                  <td class="py-sm px-md">Immediately (removed from attendee list)</td>
+                </tr>
+                <tr class="border-b border-text/10">
+                  <td class="py-sm px-md">Monthly subscription</td>
+                  <td class="py-sm px-md">End of current billing month</td>
+                </tr>
+                <tr class="border-b border-text/10">
+                  <td class="py-sm px-md">Annual subscription</td>
+                  <td class="py-sm px-md">End of current billing year</td>
+                </tr>
+                <tr>
+                  <td class="py-sm px-md">Account closure</td>
+                  <td class="py-sm px-md">Immediately (30-day reactivation period)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 class="text-xl font-semibold text-text">6.3 Data Retention</h3>
+          <p>
+            What happens to your data:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Course progress:</strong> Kept for 90 days if refunded (in case of reinstatement)</li>
+            <li><strong>Certificates:</strong> Revoked immediately if refund issued</li>
+            <li><strong>Account data:</strong> Retained per Privacy Policy (see data retention section)</li>
+            <li><strong>Payment records:</strong> Kept for 7 years (legal/tax requirements)</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">6.4 Email Communications</h3>
+          <p>
+            After cancellation:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Transactional emails:</strong> Will stop (no more course notifications)</li>
+            <li><strong>Marketing emails:</strong> You may still receive unless you unsubscribe</li>
+            <li><strong>Account emails:</strong> Important account notices may still be sent</li>
+            <li><strong>Unsubscribe:</strong> Use unsubscribe link in any email or Account Settings</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">6.5 Refund Processing</h3>
+          <p>
+            If eligible for refund:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>See our <a href="/refund-policy" class="text-primary hover:underline">Refund Policy</a> for details</li>
+            <li>Typically processed within 5-7 business days</li>
+            <li>Refund goes to original payment method</li>
+            <li>You'll receive confirmation when refund is issued</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 7 -->
+      <section id="reinstatement" class="mb-2xl scroll-mt-lg">
+        <h2 class="mb-lg text-2xl font-bold text-text">7. Reinstatement</h2>
+        <div class="space-y-md text-text-light leading-relaxed">
+          <h3 class="text-xl font-semibold text-text">7.1 Reactivating Cancelled Items</h3>
+          <p>
+            If you change your mind:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Courses:</strong> Can repurchase at current price (may be different from original)</li>
+            <li><strong>Events:</strong> Can rebook if space available, standard pricing applies</li>
+            <li><strong>Subscriptions:</strong> Can resubscribe anytime, starts new billing cycle</li>
+            <li><strong>Account:</strong> Can reactivate within 30-day grace period</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">7.2 Restoring Progress</h3>
+          <p>
+            For course enrollments:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Progress kept for 90 days if you refunded and cancelled</li>
+            <li>Repurchase within 90 days = progress restored</li>
+            <li>After 90 days = start from beginning</li>
+            <li>Contact support to request progress restoration</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">7.3 Reinstatement Fees</h3>
+          <p>
+            Additional costs for reinstatement:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Courses:</strong> No fee, just repurchase at current price</li>
+            <li><strong>Events:</strong> No fee if space available</li>
+            <li><strong>Subscriptions:</strong> No fee, standard subscription price</li>
+            <li><strong>Account:</strong> No fee if within 30 days</li>
+            <li><strong>Late reinstatement:</strong> $25 processing fee after grace period</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">7.4 Special Reinstatement Cases</h3>
+          <p>
+            We may offer reinstatement in special situations:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Technical issues that caused cancellation</li>
+            <li>Accidental cancellation within 24 hours</li>
+            <li>Medical emergencies or extenuating circumstances</li>
+            <li>Contact support to discuss your situation</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 8 -->
+      <section id="we-cancel" class="mb-2xl scroll-mt-lg">
+        <h2 class="mb-lg text-2xl font-bold text-text">8. When We Cancel</h2>
+        <div class="space-y-md text-text-light leading-relaxed">
+          <h3 class="text-xl font-semibold text-text">8.1 Event Cancellations by Us</h3>
+          <p>
+            We may need to cancel events due to:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Insufficient enrollment (minimum attendance not met)</li>
+            <li>Instructor unavailability or emergency</li>
+            <li>Venue issues or safety concerns</li>
+            <li>Weather or force majeure events</li>
+            <li>Technical difficulties for virtual events</li>
+          </ul>
+
+          <p class="mt-md">
+            If we cancel your event:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Full refund:</strong> 100% refund regardless of timing</li>
+            <li><strong>Automatic processing:</strong> Refund issued within 5 business days</li>
+            <li><strong>Discount code:</strong> 20% off your next event</li>
+            <li><strong>Priority booking:</strong> First access to rescheduled event</li>
+            <li><strong>Notification:</strong> Email sent as soon as we know</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">8.2 Course Discontinuation</h3>
+          <p>
+            If we discontinue a course:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Current students:</strong> Keep access to all existing content</li>
+            <li><strong>Future updates:</strong> May not receive new content updates</li>
+            <li><strong>Support:</strong> Limited support for discontinued courses</li>
+            <li><strong>Certificates:</strong> Remain valid and honored</li>
+            <li><strong>Refunds:</strong> Available within original 30-day window only</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">8.3 Service Termination</h3>
+          <p>
+            If we need to terminate your service (rare):
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Reason:</strong> Terms of Service violations, fraud, abuse</li>
+            <li><strong>Warning:</strong> Typically warn before termination (unless serious violation)</li>
+            <li><strong>Refunds:</strong> Generally not provided for policy violations</li>
+            <li><strong>Appeal:</strong> You can appeal the decision</li>
+            <li><strong>Data:</strong> You'll have 14 days to export your data</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">8.4 Platform Shutdown (Unlikely)</h3>
+          <p>
+            In the unlikely event we shut down the platform:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Advance notice:</strong> Minimum 90 days notice</li>
+            <li><strong>Pro-rated refunds:</strong> Refunds for unused subscription time</li>
+            <li><strong>Content download:</strong> Download window for purchased content</li>
+            <li><strong>Alternative access:</strong> We'll try to arrange alternative access or partners</li>
+            <li><strong>Data export:</strong> Full data export tools provided</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 9 -->
+      <section id="contact" class="mb-2xl scroll-mt-lg">
+        <h2 class="mb-lg text-2xl font-bold text-text">9. Contact Information</h2>
+        <div class="space-y-md text-text-light leading-relaxed">
+          <p>
+            If you have questions about cancellations or need assistance, please contact us:
+          </p>
+
+          <div class="rounded-lg bg-background p-lg">
+            <h3 class="text-xl font-semibold text-text mb-md">Cancellation Support</h3>
+            <ul class="list-none space-y-sm">
+              <li><strong class="text-text">Email:</strong> <a href="mailto:cancel@spiritualityplatform.com" class="text-primary hover:underline">cancel@spiritualityplatform.com</a></li>
+              <li><strong class="text-text">Phone:</strong> 1-800-SPIRIT-1 (1-800-774-7481)</li>
+              <li><strong class="text-text">Online:</strong> <a href="/account" class="text-primary hover:underline">Account Dashboard</a></li>
+              <li><strong class="text-text">Hours:</strong> Monday-Friday, 9 AM - 6 PM EST</li>
+              <li><strong class="text-text">Response Time:</strong> Within 1 business day</li>
+            </ul>
+          </div>
+
+          <div class="rounded-lg bg-background p-lg">
+            <h3 class="text-xl font-semibold text-text mb-md">General Support</h3>
+            <ul class="list-none space-y-sm">
+              <li><strong class="text-text">Email:</strong> <a href="mailto:support@spiritualityplatform.com" class="text-primary hover:underline">support@spiritualityplatform.com</a></li>
+              <li><strong class="text-text">Help Center:</strong> <a href="/help" class="text-primary hover:underline">spiritualityplatform.com/help</a></li>
+              <li><strong class="text-text">FAQs:</strong> <a href="/faq" class="text-primary hover:underline">spiritualityplatform.com/faq</a></li>
+            </ul>
+          </div>
+
+          <p class="mt-md">
+            We're here to help make the cancellation process as smooth as possible. Don't hesitate to reach out with questions or concerns!
+          </p>
+        </div>
+      </section>
+
+      <!-- Related Pages -->
+      <section class="mb-2xl">
+        <div class="rounded-xl bg-surface p-lg">
+          <h3 class="text-xl font-semibold text-text mb-md">Related Policies</h3>
+          <ul class="space-y-sm text-text-light">
+            <li>
+              <a href="/refund-policy" class="text-primary hover:underline font-medium">
+                Refund Policy
+              </a>
+              <span> - Learn about refunds for cancelled items</span>
+            </li>
+            <li>
+              <a href="/terms-of-service" class="text-primary hover:underline font-medium">
+                Terms of Service
+              </a>
+              <span> - Review our terms and conditions</span>
+            </li>
+            <li>
+              <a href="/privacy-policy" class="text-primary hover:underline font-medium">
+                Privacy Policy
+              </a>
+              <span> - Understand data handling after cancellation</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+    </article>
+  </div>
+</BaseLayout>
+
+<style>
+  html {
+    scroll-behavior: smooth;
+  }
+</style>

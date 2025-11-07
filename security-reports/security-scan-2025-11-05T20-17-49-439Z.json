@@ -1,0 +1,85 @@
+{
+  "timestamp": "2025-11-05T20:17:49.438Z",
+  "summary": {
+    "total": 4,
+    "critical": 0,
+    "high": 4,
+    "moderate": 0,
+    "low": 0,
+    "info": 0
+  },
+  "vulnerabilities": [
+    {
+      "package": "@playwright/test",
+      "severity": "high",
+      "title": "Vulnerability in @playwright/test",
+      "description": "",
+      "isDirect": false,
+      "affectedVersions": "0.9.7 - 0.1112.0-alpha2 || 1.38.0-alpha-1692262648000 - 1.55.1-beta-1758616458000",
+      "fixAvailable": true,
+      "fixVersion": "1.7.9",
+      "requiresBreakingChange": true,
+      "path": [
+        "node_modules/artillery-engine-playwright/node_modules/@playwright/test"
+      ]
+    },
+    {
+      "package": "artillery",
+      "severity": "high",
+      "title": "Vulnerability in artillery",
+      "description": "",
+      "isDirect": true,
+      "affectedVersions": ">=2.0.0-0",
+      "fixAvailable": true,
+      "fixVersion": "1.7.9",
+      "requiresBreakingChange": true,
+      "path": [
+        "node_modules/artillery"
+      ]
+    },
+    {
+      "package": "artillery-engine-playwright",
+      "severity": "high",
+      "title": "Vulnerability in artillery-engine-playwright",
+      "description": "",
+      "isDirect": false,
+      "affectedVersions": "0.0.5 - 0.0.6 || 0.3.1-1859275 - 1.18.0-e39393c || >=1.19.0-9942076",
+      "fixAvailable": true,
+      "fixVersion": "1.7.9",
+      "requiresBreakingChange": true,
+      "path": [
+        "node_modules/artillery-engine-playwright"
+      ]
+    },
+    {
+      "package": "playwright",
+      "severity": "high",
+      "title": "Playwright downloads and installs browsers without verifying the authenticity of the SSL certificate",
+      "description": "Playwright downloads and installs browsers without verifying the authenticity of the SSL certificate",
+      "cvss": 0,
+      "cwe": [
+        "CWE-347"
+      ],
+      "url": "https://github.com/advisories/GHSA-7mvr-c777-76hp",
+      "isDirect": false,
+      "affectedVersions": "<1.55.1",
+      "fixAvailable": true,
+      "fixVersion": "1.7.9",
+      "requiresBreakingChange": true,
+      "path": [
+        "node_modules/artillery-engine-playwright/node_modules/playwright"
+      ]
+    }
+  ],
+  "recommendations": [
+    "⚠️  HIGH: Found 4 high-severity vulnerabilities. Prioritize fixing these.",
+    "📦 1 vulnerabilities in direct dependencies. Update these packages first.",
+    "⚙️  4 vulnerabilities require breaking changes. Review with 'npm audit fix --force'",
+    "🔍 Consider enabling Snyk for advanced security scanning and monitoring",
+    "📚 Review vulnerability details and plan remediation strategy",
+    "🔄 Regularly run security scans to catch new vulnerabilities"
+  ],
+  "fixable": 0,
+  "requiresManualReview": 4,
+  "passesThreshold": false
+}

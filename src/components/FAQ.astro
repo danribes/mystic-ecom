@@ -1,0 +1,446 @@
+---
+/**
+ * T238: FAQ Component with Structured Data
+ *
+ * Displays frequently asked questions in an accordion format with SEO-friendly
+ * FAQPage structured data for rich results in search engines.
+ *
+ * Usage:
+ * ```astro
+ * import FAQ from '@/components/FAQ.astro';
+ *
+ * <FAQ
+ *   title="Frequently Asked Questions"
+ *   questions={[
+ *     {
+ *       question: 'What is meditation?',
+ *       answer: 'Meditation is a practice of mindfulness and awareness...'
+ *     },
+ *     {
+ *       question: 'How do I get started?',
+ *       answer: 'Start with 5-10 minutes daily...'
+ *     }
+ *   ]}
+ * />
+ * ```
+ *
+ * Best Practices:
+ * - Include 3-10 questions per FAQ section
+ * - Keep questions clear and concise
+ * - Provide complete, helpful answers
+ * - Use relevant questions for the page content
+ * - Test with Google Rich Results Test
+ *
+ * SEO Benefits:
+ * - Enables FAQ rich results in Google Search
+ * - Improves click-through rates
+ * - Provides direct answers to user queries
+ * - Enhances page relevance for question-based searches
+ *
+ * WCAG 2.1 Compliance:
+ * - Keyboard accessible (Tab, Enter, Space)
+ * - Screen reader friendly (ARIA labels)
+ * - Focus indicators
+ * - Semantic HTML (details/summary)
+ */
+
+import StructuredData from '@/components/StructuredData.astro';
+import { generateFAQPageSchema } from '@/lib/structuredData';
+
+export interface FAQQuestion {
+  /** The question text */
+  question: string;
+
+  /** The answer text (can include HTML) */
+  answer: string;
+
+  /** Whether this question should be expanded by default */
+  defaultOpen?: boolean;
+}
+
+interface Props {
+  /**
+   * Section title
+   * @default "Frequently Asked Questions"
+   */
+  title?: string;
+
+  /**
+   * Array of FAQ questions and answers
+   * @minimum 1 question
+   * @maximum 10 questions (for best SEO results)
+   */
+  questions: FAQQuestion[];
+
+  /**
+   * Custom CSS class for the container
+   */
+  class?: string;
+
+  /**
+   * Whether to include structured data
+   * @default true
+   */
+  includeSchema?: boolean;
+
+  /**
+   * Container width style
+   * @default 'max-w-4xl'
+   */
+  containerWidth?: string;
+
+  /**
+   * Color scheme
+   * @default 'primary' (purple theme)
+   */
+  colorScheme?: 'primary' | 'secondary' | 'neutral';
+}
+
+const {
+  title = 'Frequently Asked Questions',
+  questions,
+  class: className = '',
+  includeSchema = true,
+  containerWidth = 'max-w-4xl',
+  colorScheme = 'primary',
+} = Astro.props;
+
+// Validate questions
+if (!questions || questions.length === 0) {
+  if (import.meta.env.DEV) {
+    console.warn('FAQ component: No questions provided');
+  }
+}
+
+if (questions && questions.length > 10) {
+  if (import.meta.env.DEV) {
+    console.warn(
+      `FAQ component: ${questions.length} questions provided. ` +
+      `Google recommends 3-10 questions per page for optimal FAQ rich results.`
+    );
+  }
+}
+
+// Generate structured data for SEO
+const faqSchema = questions && questions.length > 0
+  ? generateFAQPageSchema(questions.map(q => ({
+      question: q.question,
+      answer: q.answer.replace(/<[^>]*>/g, ''), // Strip HTML for schema
+    })))
+  : null;
+
+// Color scheme classes
+const colorSchemes = {
+  primary: {
+    border: 'border-purple-200 dark:border-purple-800',
+    hoverBg: 'hover:bg-purple-50 dark:hover:bg-purple-900/20',
+    focusRing: 'focus-visible:ring-purple-500',
+    iconColor: 'text-purple-600 dark:text-purple-400',
+    titleColor: 'text-purple-900 dark:text-purple-100',
+  },
+  secondary: {
+    border: 'border-indigo-200 dark:border-indigo-800',
+    hoverBg: 'hover:bg-indigo-50 dark:hover:bg-indigo-900/20',
+    focusRing: 'focus-visible:ring-indigo-500',
+    iconColor: 'text-indigo-600 dark:text-indigo-400',
+    titleColor: 'text-indigo-900 dark:text-indigo-100',
+  },
+  neutral: {
+    border: 'border-gray-200 dark:border-gray-700',
+    hoverBg: 'hover:bg-gray-50 dark:hover:bg-gray-800',
+    focusRing: 'focus-visible:ring-gray-500',
+    iconColor: 'text-gray-600 dark:text-gray-400',
+    titleColor: 'text-gray-900 dark:text-gray-100',
+  },
+};
+
+const colors = colorSchemes[colorScheme];
+---
+
+<!-- FAQ Structured Data -->
+{includeSchema && faqSchema && (
+  <StructuredData schema={faqSchema} />
+)}
+
+<!-- FAQ Section -->
+<section
+  class:list={[
+    'faq-section',
+    containerWidth,
+    'mx-auto',
+    'px-4 sm:px-6 lg:px-8',
+    'py-8 md:py-12',
+    className,
+  ]}
+  aria-labelledby="faq-title"
+>
+  <!-- Section Header -->
+  <div class="text-center mb-8 md:mb-12">
+    <h2
+      id="faq-title"
+      class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4"
+    >
+      {title}
+    </h2>
+    <p class="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+      {questions && questions.length > 0
+        ? `Find answers to ${questions.length} common ${questions.length === 1 ? 'question' : 'questions'} below`
+        : 'Find answers to common questions below'
+      }
+    </p>
+  </div>
+
+  <!-- FAQ Accordion -->
+  {questions && questions.length > 0 ? (
+    <div class="space-y-4" role="list">
+      {questions.map((faq, index) => (
+        <details
+          class:list={[
+            'faq-item',
+            'group',
+            'border rounded-lg',
+            colors.border,
+            'transition-all duration-200',
+            'hover:shadow-md',
+          ]}
+          open={faq.defaultOpen}
+          role="listitem"
+        >
+          <!-- Question (Summary) -->
+          <summary
+            class:list={[
+              'faq-question',
+              'flex items-center justify-between',
+              'w-full',
+              'px-6 py-4',
+              'cursor-pointer',
+              'select-none',
+              colors.hoverBg,
+              'transition-colors duration-200',
+              'rounded-lg',
+              'focus-visible:outline-none',
+              'focus-visible:ring-2',
+              'focus-visible:ring-offset-2',
+              colors.focusRing,
+            ]}
+            aria-expanded="false"
+            aria-controls={`faq-answer-${index}`}
+          >
+            <!-- Question Text -->
+            <span
+              class:list={[
+                'text-left',
+                'text-lg font-semibold',
+                'pr-4',
+                colors.titleColor,
+              ]}
+            >
+              {faq.question}
+            </span>
+
+            <!-- Chevron Icon -->
+            <svg
+              class:list={[
+                'faq-icon',
+                'w-6 h-6',
+                'flex-shrink-0',
+                'transform transition-transform duration-200',
+                'group-open:rotate-180',
+                colors.iconColor,
+              ]}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </summary>
+
+          <!-- Answer -->
+          <div
+            id={`faq-answer-${index}`}
+            class="faq-answer px-6 pb-4 pt-2"
+            role="region"
+            aria-labelledby={`faq-question-${index}`}
+          >
+            <div
+              class="prose prose-gray dark:prose-invert max-w-none prose-p:mb-3 prose-ul:my-2"
+              set:html={faq.answer}
+            />
+          </div>
+        </details>
+      ))}
+    </div>
+  ) : (
+    <!-- Empty State -->
+    <div class="text-center py-12">
+      <svg
+        class="mx-auto h-12 w-12 text-gray-400"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        aria-hidden="true"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+      <p class="mt-4 text-gray-600 dark:text-gray-400">
+        No questions available at this time.
+      </p>
+    </div>
+  )}
+
+  <!-- Note for Development -->
+  {import.meta.env.DEV && questions && questions.length > 0 && (
+    <div class="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+      <p class="text-sm text-blue-800 dark:text-blue-200">
+        <strong>Dev Note:</strong> {questions.length} FAQ {questions.length === 1 ? 'question' : 'questions'} with structured data.
+        Test with <a
+          href="https://search.google.com/test/rich-results"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="underline hover:text-blue-600"
+        >
+          Google Rich Results Test
+        </a>
+      </p>
+    </div>
+  )}
+</section>
+
+<style>
+  /* Smooth animation for accordion */
+  details[open] .faq-answer {
+    animation: slideDown 0.3s ease-out;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Remove default marker */
+  details summary::-webkit-details-marker,
+  details summary::marker {
+    display: none;
+  }
+
+  /* Ensure proper focus styles */
+  summary:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+
+  /* Hover effect for better UX */
+  .faq-item:hover {
+    @apply shadow-lg;
+  }
+
+  /* Active state */
+  .faq-item[open] {
+    @apply shadow-md;
+  }
+
+  /* Typography adjustments for answer content */
+  .faq-answer a {
+    @apply text-purple-600 dark:text-purple-400 hover:underline;
+  }
+
+  .faq-answer ul,
+  .faq-answer ol {
+    @apply ml-6;
+  }
+
+  .faq-answer li {
+    @apply mb-2;
+  }
+
+  /* Dark mode enhancements */
+  @media (prefers-color-scheme: dark) {
+    .faq-item {
+      @apply bg-gray-900/50;
+    }
+  }
+</style>
+
+<script>
+  /**
+   * Enhanced FAQ Accordion Behavior
+   *
+   * Features:
+   * - Keyboard navigation (Enter/Space to toggle)
+   * - Accessible ARIA attributes
+   * - Smooth animations
+   * - Single-open mode (optional)
+   */
+
+  // Get all FAQ details elements
+  const faqItems = document.querySelectorAll<HTMLDetailsElement>('.faq-item');
+
+  faqItems.forEach((item) => {
+    const summary = item.querySelector('summary');
+
+    if (!summary) return;
+
+    // Update aria-expanded when details open/close
+    item.addEventListener('toggle', () => {
+      const isOpen = item.open;
+      summary.setAttribute('aria-expanded', isOpen.toString());
+    });
+
+    // Keyboard enhancement for Enter key
+    summary.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        item.open = !item.open;
+      }
+    });
+
+    // Optional: Close other FAQs when one opens (single-open mode)
+    // Uncomment to enable:
+    /*
+    item.addEventListener('toggle', () => {
+      if (item.open) {
+        faqItems.forEach((otherItem) => {
+          if (otherItem !== item && otherItem.open) {
+            otherItem.open = false;
+          }
+        });
+      }
+    });
+    */
+  });
+
+  // Analytics tracking (optional)
+  if (typeof window !== 'undefined' && 'gtag' in window) {
+    faqItems.forEach((item, index) => {
+      item.addEventListener('toggle', () => {
+        if (item.open) {
+          const question = item.querySelector('.faq-question')?.textContent?.trim();
+          // @ts-ignore
+          window.gtag?.('event', 'faq_expand', {
+            event_category: 'engagement',
+            event_label: question || `Question ${index + 1}`,
+            value: index + 1,
+          });
+        }
+      });
+    });
+  }
+</script>

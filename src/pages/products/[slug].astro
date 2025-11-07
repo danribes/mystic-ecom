@@ -5,9 +5,11 @@
  */
 
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import StructuredData from '@/components/StructuredData.astro';
 import { getProductBySlug, hasUserPurchasedProduct, generateDownloadLink } from '@/lib/products';
 import { getSession } from '@/lib/auth/session';
 import { trackProductView } from '@/lib/analytics';
+import { generateProductSchema } from '@/lib/structuredData';
 
 const { slug } = Astro.params;
 
@@ -74,7 +76,44 @@ const getTypeIcon = (type: string): string => {
 };
 
 const pageTitle = `${product.title} - Digital Products`;
+
+// Generate Product structured data (T227)
+const siteUrl = Astro.site?.origin || Astro.url.origin;
+const productUrl = `${siteUrl}/products/${product.slug}`;
+const productImageUrl = product.image_url ?
+  (product.image_url.startsWith('http') ? product.image_url : `${siteUrl}${product.image_url}`) :
+  `${siteUrl}/images/og-default.jpg`;
+
+// Map availability based on product active status
+const availability = product.is_active ?
+  'https://schema.org/InStock' :
+  'https://schema.org/OutOfStock';
+
+const productSchema = generateProductSchema({
+  name: product.title,
+  description: product.description,
+  image: productImageUrl,
+  brand: {
+    '@type': 'Brand',
+    name: 'Spirituality Platform'
+  },
+  sku: `PROD-${product.id}`,
+  offers: {
+    '@type': 'Offer',
+    price: Number(product.price).toFixed(2),
+    priceCurrency: 'USD',
+    availability: availability,
+    url: productUrl,
+    seller: {
+      '@type': 'Organization',
+      name: 'Spirituality Platform'
+    }
+  },
+  url: productUrl
+});
 ---
+
+<StructuredData schema={productSchema} />
 
 <BaseLayout title={pageTitle}>
   <main class="min-h-screen bg-gray-50 py-12">

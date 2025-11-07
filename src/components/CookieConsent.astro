@@ -1,0 +1,320 @@
+---
+/**
+ * T148: GDPR Cookie Consent Banner
+ *
+ * Compliant with GDPR Article 6 (Lawful basis for processing)
+ * and ePrivacy Directive (Cookie consent)
+ *
+ * Features:
+ * - Granular consent (Essential, Analytics, Marketing)
+ * - Persistent storage in localStorage
+ * - Respects user choice
+ * - Accessible (keyboard navigation, ARIA labels)
+ */
+---
+
+<div
+  id="cookie-consent-banner"
+  class="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 shadow-lg border-t-2 border-blue-500 transform transition-transform duration-300"
+  role="dialog"
+  aria-labelledby="cookie-consent-title"
+  aria-describedby="cookie-consent-description"
+  style="display: none;"
+>
+  <div class="container mx-auto px-4 py-6 max-w-6xl">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <!-- Content -->
+      <div class="flex-1">
+        <h2
+          id="cookie-consent-title"
+          class="text-lg font-semibold text-gray-900 dark:text-white mb-2"
+        >
+          🍪 Cookie Consent
+        </h2>
+        <p
+          id="cookie-consent-description"
+          class="text-sm text-gray-600 dark:text-gray-300 mb-3"
+        >
+          We use cookies to improve your experience. Essential cookies are
+          required for the site to function. You can choose to accept analytics
+          and marketing cookies.
+        </p>
+
+        <!-- Cookie Categories -->
+        <div class="flex flex-col sm:flex-row gap-3 text-xs">
+          <label class="flex items-center gap-2 cursor-not-allowed">
+            <input
+              type="checkbox"
+              checked
+              disabled
+              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+              aria-label="Essential cookies (required)"
+            />
+            <span class="text-gray-700 dark:text-gray-200">
+              <strong>Essential</strong> (Required)
+            </span>
+          </label>
+
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              id="consent-analytics"
+              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+              aria-label="Analytics cookies (optional)"
+            />
+            <span class="text-gray-700 dark:text-gray-200">
+              <strong>Analytics</strong> (Optional)
+            </span>
+          </label>
+
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              id="consent-marketing"
+              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+              aria-label="Marketing cookies (optional)"
+            />
+            <span class="text-gray-700 dark:text-gray-200">
+              <strong>Marketing</strong> (Optional)
+            </span>
+          </label>
+        </div>
+
+        <!-- Privacy Policy Link -->
+        <div class="mt-2">
+          <a
+            href="/privacy-policy"
+            class="text-xs text-blue-600 dark:text-blue-400 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+          >
+            Read our Privacy Policy →
+          </a>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+        <button
+          id="cookie-accept-selected"
+          class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          aria-label="Accept selected cookie preferences"
+        >
+          Accept Selected
+        </button>
+        <button
+          id="cookie-accept-all"
+          class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+          aria-label="Accept all cookies"
+        >
+          Accept All
+        </button>
+        <button
+          id="cookie-reject-all"
+          class="px-6 py-2 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-700 text-gray-800 dark:text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+          aria-label="Reject optional cookies (essential only)"
+        >
+          Reject Optional
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  /**
+   * Cookie Consent Management
+   */
+
+  interface CookieConsent {
+    essential: boolean;
+    analytics: boolean;
+    marketing: boolean;
+    timestamp: number;
+  }
+
+  const CONSENT_COOKIE_NAME = 'cookie_consent';
+  const CONSENT_STORAGE_KEY = 'gdpr_cookie_consent';
+
+  /**
+   * Get existing consent from localStorage
+   */
+  function getExistingConsent(): CookieConsent | null {
+    try {
+      const stored = localStorage.getItem(CONSENT_STORAGE_KEY);
+      if (!stored) return null;
+
+      const consent = JSON.parse(stored) as CookieConsent;
+
+      // Check if consent is older than 1 year (365 days)
+      const oneYearAgo = Date.now() - 365 * 24 * 60 * 60 * 1000;
+      if (consent.timestamp < oneYearAgo) {
+        return null; // Expired consent
+      }
+
+      return consent;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Save consent to localStorage and cookie
+   */
+  function saveConsent(consent: CookieConsent): void {
+    // Save to localStorage
+    localStorage.setItem(CONSENT_STORAGE_KEY, JSON.stringify(consent));
+
+    // Save to cookie (for server-side access)
+    const cookieValue = encodeURIComponent(JSON.stringify(consent));
+    const expires = new Date();
+    expires.setFullYear(expires.getFullYear() + 1); // 1 year expiry
+
+    document.cookie = `${CONSENT_COOKIE_NAME}=${cookieValue}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
+
+    // Trigger custom event for analytics/marketing scripts
+    window.dispatchEvent(
+      new CustomEvent('cookieConsentChanged', { detail: consent })
+    );
+  }
+
+  /**
+   * Show cookie banner
+   */
+  function showBanner(): void {
+    const banner = document.getElementById('cookie-consent-banner');
+    if (banner) {
+      banner.style.display = 'block';
+      // Animate in
+      setTimeout(() => {
+        banner.style.transform = 'translateY(0)';
+      }, 10);
+    }
+  }
+
+  /**
+   * Hide cookie banner
+   */
+  function hideBanner(): void {
+    const banner = document.getElementById('cookie-consent-banner');
+    if (banner) {
+      banner.style.transform = 'translateY(100%)';
+      setTimeout(() => {
+        banner.style.display = 'none';
+      }, 300);
+    }
+  }
+
+  /**
+   * Get current checkbox state
+   */
+  function getCurrentSelection(): CookieConsent {
+    const analyticsCheckbox = document.getElementById(
+      'consent-analytics'
+    ) as HTMLInputElement;
+    const marketingCheckbox = document.getElementById(
+      'consent-marketing'
+    ) as HTMLInputElement;
+
+    return {
+      essential: true, // Always true
+      analytics: analyticsCheckbox?.checked || false,
+      marketing: marketingCheckbox?.checked || false,
+      timestamp: Date.now(),
+    };
+  }
+
+  /**
+   * Initialize cookie consent
+   */
+  function initCookieConsent(): void {
+    const existingConsent = getExistingConsent();
+
+    if (existingConsent) {
+      // User already gave consent - don't show banner
+      // But apply consent settings
+      saveConsent(existingConsent);
+      return;
+    }
+
+    // No consent - show banner
+    showBanner();
+
+    // Button handlers
+    const acceptSelectedBtn = document.getElementById('cookie-accept-selected');
+    const acceptAllBtn = document.getElementById('cookie-accept-all');
+    const rejectAllBtn = document.getElementById('cookie-reject-all');
+
+    acceptSelectedBtn?.addEventListener('click', () => {
+      const consent = getCurrentSelection();
+      saveConsent(consent);
+      hideBanner();
+    });
+
+    acceptAllBtn?.addEventListener('click', () => {
+      const consent: CookieConsent = {
+        essential: true,
+        analytics: true,
+        marketing: true,
+        timestamp: Date.now(),
+      };
+      saveConsent(consent);
+      hideBanner();
+    });
+
+    rejectAllBtn?.addEventListener('click', () => {
+      const consent: CookieConsent = {
+        essential: true,
+        analytics: false,
+        marketing: false,
+        timestamp: Date.now(),
+      };
+      saveConsent(consent);
+      hideBanner();
+    });
+  }
+
+  /**
+   * Load analytics/marketing scripts based on consent
+   */
+  function loadConsentBasedScripts(consent: CookieConsent): void {
+    // Example: Load Google Analytics only if analytics consent given
+    if (consent.analytics) {
+      console.log('[Cookie Consent] Analytics enabled');
+      // Load Google Analytics here
+      // Example: gtag('consent', 'update', { analytics_storage: 'granted' });
+    }
+
+    // Example: Load marketing pixels only if marketing consent given
+    if (consent.marketing) {
+      console.log('[Cookie Consent] Marketing enabled');
+      // Load Facebook Pixel, etc. here
+    }
+  }
+
+  // Initialize on page load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCookieConsent);
+  } else {
+    initCookieConsent();
+  }
+
+  // Listen for consent changes
+  window.addEventListener('cookieConsentChanged', (event) => {
+    const consent = (event as CustomEvent<CookieConsent>).detail;
+    loadConsentBasedScripts(consent);
+  });
+
+  // Expose API for programmatic consent management
+  (window as any).cookieConsent = {
+    getConsent: getExistingConsent,
+    setConsent: saveConsent,
+    showBanner: showBanner,
+    hideBanner: hideBanner,
+  };
+</script>
+
+<style>
+  /* Initial state: hidden below viewport */
+  #cookie-consent-banner {
+    transform: translateY(100%);
+  }
+</style>

@@ -13,6 +13,8 @@ import VideoPlayer from '@/components/VideoPlayer.astro';
 import ReviewForm from '@/components/ReviewForm.astro';
 import ReviewStats from '@/components/ReviewStats.astro';
 import ReviewList from '@/components/ReviewList.astro';
+import StructuredData from '@/components/StructuredData.astro';
+import { generateCourseSchema } from '@/lib/structuredData';
 import type { Course } from '@/types';
 import { getSessionFromRequest } from '@/lib/auth/session';
 import { getPool } from '@/lib/db';
@@ -394,6 +396,55 @@ const formatLessonType = (type: string): string => {
   };
   return types[type] || type;
 };
+
+// Generate Course structured data for SEO (T225)
+const siteUrl = Astro.site?.origin || Astro.url.origin;
+const courseUrl = `${siteUrl}/courses/${course.slug}`;
+const courseImageUrl = course.imageUrl.startsWith('http')
+  ? course.imageUrl
+  : `${siteUrl}${course.imageUrl}`;
+
+const courseSchema = generateCourseSchema({
+  name: course.title,
+  description: course.longDescription || course.description,
+  url: courseUrl,
+  image: courseImageUrl,
+  provider: {
+    '@type': 'Organization',
+    name: 'Spirituality Platform',
+    url: siteUrl,
+  },
+  instructor: {
+    '@type': 'Person',
+    name: course.instructorName,
+    image: course.instructorAvatar?.startsWith('http')
+      ? course.instructorAvatar
+      : `${siteUrl}${course.instructorAvatar}`,
+  },
+  hasCourseInstance: [
+    {
+      '@type': 'CourseInstance',
+      courseMode: 'online',
+      courseWorkload: `PT${Math.floor(course.duration / 3600)}H${Math.floor((course.duration % 3600) / 60)}M`,
+    },
+  ],
+  offers: {
+    '@type': 'Offer',
+    price: (course.price / 100).toFixed(2),
+    priceCurrency: 'USD',
+    availability: 'https://schema.org/InStock',
+    url: courseUrl,
+  },
+  ...(course.avgRating && course.reviewCount ? {
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: course.avgRating,
+      reviewCount: course.reviewCount,
+      bestRating: 5,
+      worstRating: 1,
+    },
+  } : {}),
+});
 ---
 
 <BaseLayout
@@ -402,6 +453,9 @@ const formatLessonType = (type: string): string => {
   keywords={course.tags.join(', ')}
   ogImage={course.imageUrl}
 >
+  <!-- Course Structured Data (T225) -->
+  <StructuredData schema={courseSchema} slot="head" />
+
   <div class="course-detail">
     <!-- Course Header -->
     <section class="course-header">

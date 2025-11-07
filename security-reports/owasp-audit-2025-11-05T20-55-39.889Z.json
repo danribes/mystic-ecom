@@ -1,0 +1,813 @@
+{
+  "timestamp": "2025-11-05T20:55:39.888Z",
+  "applicationName": "Web Application",
+  "auditVersion": "1.0.0",
+  "summary": {
+    "totalChecks": 39,
+    "passed": 25,
+    "failed": 6,
+    "warnings": 8,
+    "notApplicable": 0,
+    "complianceScore": 64,
+    "criticalIssues": 2,
+    "highIssues": 6,
+    "mediumIssues": 6,
+    "lowIssues": 0
+  },
+  "categoryResults": {
+    "A01_Broken_Access_Control": {
+      "category": "A01_Broken_Access_Control",
+      "displayName": "A01:2021 – Broken Access Control",
+      "description": "Restrictions on authenticated users not properly enforced",
+      "totalChecks": 4,
+      "passed": 3,
+      "failed": 1,
+      "warnings": 0,
+      "status": "fail",
+      "priority": "critical"
+    },
+    "A02_Cryptographic_Failures": {
+      "category": "A02_Cryptographic_Failures",
+      "displayName": "A02:2021 – Cryptographic Failures",
+      "description": "Failures related to cryptography leading to sensitive data exposure",
+      "totalChecks": 5,
+      "passed": 4,
+      "failed": 1,
+      "warnings": 0,
+      "status": "fail",
+      "priority": "critical"
+    },
+    "A03_Injection": {
+      "category": "A03_Injection",
+      "displayName": "A03:2021 – Injection",
+      "description": "Injection flaws such as SQL, NoSQL, OS command injection",
+      "totalChecks": 4,
+      "passed": 2,
+      "failed": 1,
+      "warnings": 1,
+      "status": "fail",
+      "priority": "critical"
+    },
+    "A04_Insecure_Design": {
+      "category": "A04_Insecure_Design",
+      "displayName": "A04:2021 – Insecure Design",
+      "description": "Missing or ineffective control design",
+      "totalChecks": 4,
+      "passed": 3,
+      "failed": 0,
+      "warnings": 1,
+      "status": "warning",
+      "priority": "high"
+    },
+    "A05_Security_Misconfiguration": {
+      "category": "A05_Security_Misconfiguration",
+      "displayName": "A05:2021 – Security Misconfiguration",
+      "description": "Insecure default configurations, incomplete configs, open cloud storage",
+      "totalChecks": 4,
+      "passed": 1,
+      "failed": 1,
+      "warnings": 2,
+      "status": "fail",
+      "priority": "high"
+    },
+    "A06_Vulnerable_Components": {
+      "category": "A06_Vulnerable_Components",
+      "displayName": "A06:2021 – Vulnerable and Outdated Components",
+      "description": "Using vulnerable, outdated, or unsupported components",
+      "totalChecks": 3,
+      "passed": 1,
+      "failed": 1,
+      "warnings": 1,
+      "status": "fail",
+      "priority": "high"
+    },
+    "A07_Authentication_Failures": {
+      "category": "A07_Authentication_Failures",
+      "displayName": "A07:2021 – Identification and Authentication Failures",
+      "description": "Authentication and session management implementation flaws",
+      "totalChecks": 4,
+      "passed": 4,
+      "failed": 0,
+      "warnings": 0,
+      "status": "pass",
+      "priority": "critical"
+    },
+    "A08_Data_Integrity_Failures": {
+      "category": "A08_Data_Integrity_Failures",
+      "displayName": "A08:2021 – Software and Data Integrity Failures",
+      "description": "Code and infrastructure that do not protect against integrity violations",
+      "totalChecks": 4,
+      "passed": 2,
+      "failed": 0,
+      "warnings": 2,
+      "status": "warning",
+      "priority": "high"
+    },
+    "A09_Logging_Monitoring_Failures": {
+      "category": "A09_Logging_Monitoring_Failures",
+      "displayName": "A09:2021 – Security Logging and Monitoring Failures",
+      "description": "Insufficient logging and monitoring, ineffective integration with incident response",
+      "totalChecks": 4,
+      "passed": 3,
+      "failed": 1,
+      "warnings": 0,
+      "status": "fail",
+      "priority": "medium"
+    },
+    "A10_SSRF": {
+      "category": "A10_SSRF",
+      "displayName": "A10:2021 – Server-Side Request Forgery",
+      "description": "Fetching remote resources without validating user-supplied URLs",
+      "totalChecks": 3,
+      "passed": 2,
+      "failed": 0,
+      "warnings": 1,
+      "status": "warning",
+      "priority": "medium"
+    }
+  },
+  "checks": [
+    {
+      "id": "A01-001",
+      "category": "A01_Broken_Access_Control",
+      "name": "Authorization Middleware",
+      "description": "Verify authentication middleware is implemented",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "Authentication middleware found"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-284",
+        "CWE-285"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A01-002",
+      "category": "A01_Broken_Access_Control",
+      "name": "Role-Based Access Control",
+      "description": "Verify RBAC implementation exists",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "Found 777 RBAC-related files"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-639"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A01-003",
+      "category": "A01_Broken_Access_Control",
+      "name": "API Endpoint Protection",
+      "description": "Verify API endpoints have authentication checks",
+      "status": "fail",
+      "severity": "high",
+      "findings": [
+        "13/259 API files contain authentication checks",
+        "Protection rate: 5.0%"
+      ],
+      "recommendations": [
+        "Ensure all API endpoints verify authentication before processing requests"
+      ],
+      "cweIds": [
+        "CWE-306"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A01-004",
+      "category": "A01_Broken_Access_Control",
+      "name": "CORS Configuration",
+      "description": "Verify CORS is properly configured",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "CORS configuration found"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-346"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A02-001",
+      "category": "A02_Cryptographic_Failures",
+      "name": "HTTPS Enforcement",
+      "description": "Verify HTTPS is enforced for all connections",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "HTTPS enforcement detected in codebase"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-319",
+        "CWE-311"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A02-002",
+      "category": "A02_Cryptographic_Failures",
+      "name": "Password Hashing",
+      "description": "Verify passwords are hashed with strong algorithms",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "Strong password hashing library detected"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-256",
+        "CWE-916"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A02-003",
+      "category": "A02_Cryptographic_Failures",
+      "name": "Data Encryption",
+      "description": "Verify sensitive data is encrypted",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "Encryption implementation found"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-311",
+        "CWE-327"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A02-004",
+      "category": "A02_Cryptographic_Failures",
+      "name": "Weak Cryptography Detection",
+      "description": "Check for weak cryptographic algorithms",
+      "status": "fail",
+      "severity": "high",
+      "findings": [
+        "Weak cryptographic algorithms detected (MD5, SHA1, DES, RC4)"
+      ],
+      "recommendations": [
+        "Replace MD5/SHA1 with SHA-256 or higher",
+        "Use AES instead of DES/RC4"
+      ],
+      "cweIds": [
+        "CWE-327",
+        "CWE-328"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A02-005",
+      "category": "A02_Cryptographic_Failures",
+      "name": "Environment Variable Protection",
+      "description": "Verify .env files are not committed to git",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        ".env files excluded from git"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-312",
+        "CWE-798"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A03-001",
+      "category": "A03_Injection",
+      "name": "SQL Injection Protection",
+      "description": "Verify parameterized queries are used",
+      "status": "fail",
+      "severity": "critical",
+      "findings": [
+        "Parameterized queries detected",
+        "Raw SQL execution detected - HIGH RISK"
+      ],
+      "recommendations": [
+        "Replace all raw SQL with parameterized queries",
+        "Use ORM/query builder"
+      ],
+      "cweIds": [
+        "CWE-89"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A03-002",
+      "category": "A03_Injection",
+      "name": "XSS Protection",
+      "description": "Verify XSS protection mechanisms are in place",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "React provides automatic XSS protection",
+        "Additional XSS sanitization found"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-79"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A03-003",
+      "category": "A03_Injection",
+      "name": "Command Injection Protection",
+      "description": "Check for unsafe command execution",
+      "status": "warning",
+      "severity": "high",
+      "findings": [
+        "Command execution detected - verify input validation"
+      ],
+      "recommendations": [
+        "Validate and sanitize all inputs to exec/spawn",
+        "Use allowlists for commands",
+        "Avoid eval()"
+      ],
+      "cweIds": [
+        "CWE-78",
+        "CWE-94"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A03-004",
+      "category": "A03_Injection",
+      "name": "Input Validation",
+      "description": "Verify input validation is implemented",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "Input validation library detected"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-20"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A04-001",
+      "category": "A04_Insecure_Design",
+      "name": "Security Documentation",
+      "description": "Verify security requirements are documented",
+      "status": "warning",
+      "severity": "medium",
+      "findings": [
+        "No security documentation found"
+      ],
+      "recommendations": [
+        "Create SECURITY.md documenting security requirements and policies"
+      ],
+      "cweIds": [
+        "CWE-1008"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A04-002",
+      "category": "A04_Insecure_Design",
+      "name": "Rate Limiting",
+      "description": "Verify rate limiting is implemented",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "Rate limiting implementation found"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-770",
+        "CWE-307"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A04-003",
+      "category": "A04_Insecure_Design",
+      "name": "Error Handling",
+      "description": "Verify proper error handling exists",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "Error handling detected"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-209",
+        "CWE-755"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A04-004",
+      "category": "A04_Insecure_Design",
+      "name": "Business Logic Validation",
+      "description": "Check for business logic validation",
+      "status": "pass",
+      "severity": "medium",
+      "findings": [
+        "Business logic validation detected"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-840"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A05-001",
+      "category": "A05_Security_Misconfiguration",
+      "name": "Security Headers",
+      "description": "Verify security headers are configured",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "Security headers configuration found"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-16",
+        "CWE-693"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A05-002",
+      "category": "A05_Security_Misconfiguration",
+      "name": "Default Credentials",
+      "description": "Check for default credentials in code",
+      "status": "fail",
+      "severity": "critical",
+      "findings": [
+        "Potential default credentials found in code"
+      ],
+      "recommendations": [
+        "Remove all default credentials",
+        "Use environment variables for credentials"
+      ],
+      "cweIds": [
+        "CWE-798"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A05-003",
+      "category": "A05_Security_Misconfiguration",
+      "name": "Debug Code",
+      "description": "Check for debug code that should be removed",
+      "status": "warning",
+      "severity": "medium",
+      "findings": [
+        "Debug code detected - ensure it's removed in production"
+      ],
+      "recommendations": [
+        "Remove console.log and debugger statements",
+        "Disable debug mode in production"
+      ],
+      "cweIds": [
+        "CWE-489"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A05-004",
+      "category": "A05_Security_Misconfiguration",
+      "name": "Unnecessary Features",
+      "description": "Check for unnecessary features that should be disabled",
+      "status": "warning",
+      "severity": "medium",
+      "findings": [
+        "Unnecessary features detected"
+      ],
+      "recommendations": [
+        "Disable directory listing",
+        "Remove unused features"
+      ],
+      "cweIds": [
+        "CWE-16"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A06-001",
+      "category": "A06_Vulnerable_Components",
+      "name": "Dependency Vulnerabilities",
+      "description": "Scan for vulnerabilities in dependencies",
+      "status": "fail",
+      "severity": "high",
+      "findings": [
+        "Critical: 0",
+        "High: 4",
+        "Moderate: 0",
+        "Total: 4"
+      ],
+      "recommendations": [
+        "Run npm audit fix",
+        "Update vulnerable dependencies",
+        "Review security advisories"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A06-002",
+      "category": "A06_Vulnerable_Components",
+      "name": "Dependency Lock File",
+      "description": "Verify package-lock.json exists",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "package-lock.json found"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-1104"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A06-003",
+      "category": "A06_Vulnerable_Components",
+      "name": "Automated Dependency Updates",
+      "description": "Check for automated dependency update tools",
+      "status": "warning",
+      "severity": "medium",
+      "findings": [
+        "No automated updates configured"
+      ],
+      "recommendations": [
+        "Configure Renovate or Dependabot for automated updates"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A07-001",
+      "category": "A07_Authentication_Failures",
+      "name": "Password Policy",
+      "description": "Verify password strength requirements",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "Password policy implementation found"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-521"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A07-002",
+      "category": "A07_Authentication_Failures",
+      "name": "Multi-Factor Authentication",
+      "description": "Check for MFA implementation",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "MFA implementation found"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-287"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A07-003",
+      "category": "A07_Authentication_Failures",
+      "name": "Session Management",
+      "description": "Verify session management is implemented",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "Session management found"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-384"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A07-004",
+      "category": "A07_Authentication_Failures",
+      "name": "Brute Force Protection",
+      "description": "Verify brute force protection is in place",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "Brute force protection detected"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-307"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A08-001",
+      "category": "A08_Data_Integrity_Failures",
+      "name": "CI/CD Pipeline",
+      "description": "Verify CI/CD pipeline exists",
+      "status": "warning",
+      "severity": "medium",
+      "findings": [
+        "No CI/CD pipeline detected"
+      ],
+      "recommendations": [
+        "Implement CI/CD with security checks"
+      ],
+      "cweIds": [
+        "CWE-494"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A08-002",
+      "category": "A08_Data_Integrity_Failures",
+      "name": "Package Integrity",
+      "description": "Verify package integrity checks",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "Package integrity checks found"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-345"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A08-003",
+      "category": "A08_Data_Integrity_Failures",
+      "name": "Safe Deserialization",
+      "description": "Check for unsafe deserialization",
+      "status": "warning",
+      "severity": "high",
+      "findings": [
+        "Potential unsafe deserialization detected"
+      ],
+      "recommendations": [
+        "Validate all deserialized data",
+        "Avoid eval() and unsafe parsing"
+      ],
+      "cweIds": [
+        "CWE-502"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A08-004",
+      "category": "A08_Data_Integrity_Failures",
+      "name": "Secure Update Mechanism",
+      "description": "Verify secure automated updates",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "Automated update mechanism found"
+      ],
+      "recommendations": [],
+      "automated": true
+    },
+    {
+      "id": "A09-001",
+      "category": "A09_Logging_Monitoring_Failures",
+      "name": "Logging Implementation",
+      "description": "Verify logging is implemented",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "Logging implementation found"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-778"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A09-002",
+      "category": "A09_Logging_Monitoring_Failures",
+      "name": "Security Event Logging",
+      "description": "Verify security events are logged",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "Security event logging found"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-778"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A09-003",
+      "category": "A09_Logging_Monitoring_Failures",
+      "name": "Sensitive Data in Logs",
+      "description": "Check for sensitive data being logged",
+      "status": "fail",
+      "severity": "high",
+      "findings": [
+        "Potential sensitive data logging detected"
+      ],
+      "recommendations": [
+        "Remove password/token logging",
+        "Implement log sanitization"
+      ],
+      "cweIds": [
+        "CWE-532"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A09-004",
+      "category": "A09_Logging_Monitoring_Failures",
+      "name": "Monitoring and Alerting",
+      "description": "Check for monitoring/alerting tools",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "Monitoring/alerting system detected"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-778"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A10-001",
+      "category": "A10_SSRF",
+      "name": "External HTTP Requests",
+      "description": "Check for external HTTP requests that could be vulnerable to SSRF",
+      "status": "warning",
+      "severity": "medium",
+      "findings": [
+        "External HTTP requests detected - verify URL validation"
+      ],
+      "recommendations": [
+        "Validate all URLs",
+        "Use allowlist for allowed domains",
+        "Block internal IP ranges"
+      ],
+      "cweIds": [
+        "CWE-918"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A10-002",
+      "category": "A10_SSRF",
+      "name": "URL Validation",
+      "description": "Verify URL validation for external requests",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "URL validation detected"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-918"
+      ],
+      "automated": true
+    },
+    {
+      "id": "A10-003",
+      "category": "A10_SSRF",
+      "name": "DNS Rebinding Protection",
+      "description": "Check for DNS rebinding protection",
+      "status": "pass",
+      "severity": "info",
+      "findings": [
+        "DNS protection measures detected"
+      ],
+      "recommendations": [],
+      "cweIds": [
+        "CWE-350"
+      ],
+      "automated": true
+    }
+  ],
+  "overallStatus": "non_compliant",
+  "nextSteps": [
+    "🚨 URGENT: Address 2 critical security issue(s) immediately",
+    "⚠️  Fix 6 high-severity issue(s) as soon as possible",
+    "📋 Review and address 6 medium-severity warning(s)",
+    "Review all failed checks and implement recommended fixes",
+    "Compliance score is below 70% - prioritize security improvements",
+    "Re-run audit after implementing fixes to verify improvements",
+    "Integrate audit into CI/CD pipeline for continuous monitoring"
+  ]
+}

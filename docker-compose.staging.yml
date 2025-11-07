@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database (Staging)
+  postgres-staging:
+    image: postgres:15-alpine
+    container_name: spirituality-postgres-staging
+    environment:
+      POSTGRES_DB: spirituality_staging
+      POSTGRES_USER: staging_user
+      POSTGRES_PASSWORD: staging_password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-staging-data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U staging_user -d spirituality_staging"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - staging-network
+
+  # Redis Cache (Staging)
+  redis-staging:
+    image: redis:7-alpine
+    container_name: spirituality-redis-staging
+    command: redis-server --appendonly yes --requirepass staging_redis_password
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-staging-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - staging-network
+
+  # Application (Staging)
+  app-staging:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: spirituality-app-staging
+    environment:
+      NODE_ENV: staging
+      DATABASE_URL: postgresql://staging_user:staging_password@postgres-staging:5432/spirituality_staging
+      REDIS_URL: redis://:staging_redis_password@redis-staging:6379
+      PORT: 4321
+    ports:
+      - "4322:4321"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - staging-backups:/app/backups/staging
+    depends_on:
+      postgres-staging:
+        condition: service_healthy
+      redis-staging:
+        condition: service_healthy
+    command: npm run dev
+    networks:
+      - staging-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4321/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres-staging-data:
+    driver: local
+  redis-staging-data:
+    driver: local
+  staging-backups:
+    driver: local
+
+networks:
+  staging-network:
+    driver: bridge

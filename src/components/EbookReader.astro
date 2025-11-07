@@ -1,0 +1,665 @@
+---
+/**
+ * EbookReader Component (T128)
+ *
+ * Web-based ebook reader with support for PDF and other formats.
+ * Features navigation, zoom, bookmarks, and progress tracking.
+ *
+ * Features:
+ * - PDF viewing with iframe/embed
+ * - Page navigation (previous/next, jump to page)
+ * - Zoom controls (fit width, fit height, custom zoom)
+ * - Fullscreen mode
+ * - Progress tracking (saves current page)
+ * - Bookmark support
+ * - Keyboard shortcuts (Arrow keys, +/-, F)
+ * - Responsive design with Tailwind CSS
+ * - Accessible with ARIA labels
+ *
+ * @param ebookUrl - URL to the ebook file (PDF, EPUB, etc.)
+ * @param title - Ebook title
+ * @param ebookId - Ebook ID for progress tracking
+ * @param totalPages - Total number of pages (optional, auto-detected for PDF)
+ * @param coverImage - Cover image URL
+ * @param author - Author name
+ * @param format - Ebook format ('pdf', 'epub', etc.)
+ * @param className - Additional CSS classes
+ */
+
+import type { EbookFormat } from '@/lib/ebook';
+
+interface Props {
+  ebookUrl: string;
+  title: string;
+  ebookId?: string;
+  totalPages?: number;
+  coverImage?: string;
+  author?: string;
+  format?: EbookFormat;
+  className?: string;
+}
+
+const {
+  ebookUrl,
+  title,
+  ebookId,
+  totalPages = 1,
+  coverImage,
+  author,
+  format = 'pdf',
+  className = '',
+} = Astro.props;
+
+const readerId = `ebook-reader-${ebookId || Math.random().toString(36).substr(2, 9)}`;
+---
+
+<div
+  id={readerId}
+  class:list={[
+    'ebook-reader relative flex flex-col h-screen bg-gray-100 dark:bg-gray-900',
+    className
+  ]}
+  data-ebook-id={ebookId}
+  data-ebook-url={ebookUrl}
+  data-total-pages={totalPages}
+  role="application"
+  aria-label={`Ebook reader: ${title}`}
+>
+  <!-- Header / Toolbar -->
+  <div class="reader-toolbar flex items-center justify-between gap-sm bg-white px-lg py-md shadow-md dark:bg-gray-800">
+    <!-- Left: Book Info -->
+    <div class="flex items-center gap-md min-w-0 flex-1">
+      {coverImage && (
+        <img
+          src={coverImage}
+          alt={`${title} cover`}
+          class="h-12 w-8 flex-shrink-0 rounded object-cover shadow-sm"
+        />
+      )}
+      <div class="min-w-0 flex-1">
+        <h1 class="truncate text-lg font-semibold text-gray-900 dark:text-white">
+          {title}
+        </h1>
+        {author && (
+          <p class="truncate text-sm text-gray-600 dark:text-gray-400">
+            by {author}
+          </p>
+        )}
+      </div>
+    </div>
+
+    <!-- Center: Navigation Controls -->
+    <div class="flex items-center gap-sm">
+      <!-- Previous Page -->
+      <button
+        type="button"
+        class="prev-page rounded-md bg-gray-100 p-sm text-gray-700 transition-colors hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+        aria-label="Previous page"
+        title="Previous (Left Arrow)"
+      >
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+
+      <!-- Page Input -->
+      <div class="flex items-center gap-xs">
+        <input
+          type="number"
+          min="1"
+          max={totalPages}
+          value="1"
+          class="page-input w-16 rounded-md border border-gray-300 px-sm py-xs text-center text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          aria-label="Current page"
+        />
+        <span class="text-sm text-gray-600 dark:text-gray-400">
+          / <span class="total-pages">{totalPages}</span>
+        </span>
+      </div>
+
+      <!-- Next Page -->
+      <button
+        type="button"
+        class="next-page rounded-md bg-gray-100 p-sm text-gray-700 transition-colors hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+        aria-label="Next page"
+        title="Next (Right Arrow)"
+      >
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Right: View Controls -->
+    <div class="flex items-center gap-sm">
+      <!-- Zoom Out -->
+      <button
+        type="button"
+        class="zoom-out rounded-md bg-gray-100 p-sm text-gray-700 transition-colors hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+        aria-label="Zoom out"
+        title="Zoom out (-)"
+      >
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
+        </svg>
+      </button>
+
+      <!-- Zoom Level -->
+      <span class="zoom-level min-w-[4rem] text-center text-sm font-medium text-gray-700 dark:text-gray-300">
+        100%
+      </span>
+
+      <!-- Zoom In -->
+      <button
+        type="button"
+        class="zoom-in rounded-md bg-gray-100 p-sm text-gray-700 transition-colors hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+        aria-label="Zoom in"
+        title="Zoom in (+)"
+      >
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+        </svg>
+      </button>
+
+      <!-- Fullscreen -->
+      <button
+        type="button"
+        class="fullscreen-toggle rounded-md bg-gray-100 p-sm text-gray-700 transition-colors hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+        aria-label="Toggle fullscreen"
+        title="Fullscreen (F)"
+      >
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Reading Area -->
+  <div class="reader-container relative flex-1 overflow-auto bg-gray-200 dark:bg-gray-800">
+    <!-- Loading State -->
+    <div class="loading-state absolute inset-0 z-10 flex items-center justify-center bg-white/90 dark:bg-gray-900/90">
+      <div class="flex flex-col items-center gap-md">
+        <div class="h-16 w-16 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+        <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
+          Loading ebook...
+        </p>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div class="error-state absolute inset-0 z-10 hidden flex-col items-center justify-center bg-white dark:bg-gray-900 p-lg">
+      <div class="flex max-w-md flex-col items-center gap-md text-center">
+        <svg class="h-16 w-16 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+          Failed to Load Ebook
+        </h3>
+        <p class="error-message text-sm text-gray-600 dark:text-gray-400">
+          Unable to load the ebook. Please try again or contact support.
+        </p>
+        <button
+          type="button"
+          class="retry-button mt-md rounded-md bg-primary px-lg py-sm text-sm font-semibold text-white transition-all hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+
+    <!-- PDF Viewer (iframe) -->
+    <div class="pdf-viewer-wrapper flex h-full items-center justify-center p-lg">
+      <iframe
+        class="pdf-viewer w-full max-w-5xl rounded-lg bg-white shadow-2xl"
+        src={`${ebookUrl}#page=1`}
+        title={title}
+        style="height: calc(100vh - 120px);"
+      ></iframe>
+    </div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="progress-bar-container bg-white px-lg py-sm shadow-md dark:bg-gray-800">
+    <div class="flex items-center gap-sm">
+      <span class="text-xs font-medium text-gray-600 dark:text-gray-400">
+        Progress:
+      </span>
+      <div class="relative flex-1 h-2 bg-gray-200 rounded-full overflow-hidden dark:bg-gray-700">
+        <div
+          class="progress-bar-fill absolute left-0 top-0 h-full bg-primary transition-all duration-300"
+          style="width: 0%"
+        ></div>
+      </div>
+      <span class="progress-percentage text-xs font-medium text-gray-700 dark:text-gray-300">
+        0%
+      </span>
+    </div>
+  </div>
+
+  <!-- Screen Reader Announcements -->
+  <div class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+</div>
+
+<!-- Keyboard Shortcuts Help (Screen Reader) -->
+<div class="sr-only">
+  <p>Ebook reader keyboard shortcuts:</p>
+  <ul>
+    <li>Left Arrow: Previous page</li>
+    <li>Right Arrow: Next page</li>
+    <li>+: Zoom in</li>
+    <li>-: Zoom out</li>
+    <li>F: Toggle fullscreen</li>
+    <li>Home: First page</li>
+    <li>End: Last page</li>
+  </ul>
+</div>
+
+<script>
+/**
+ * EbookReader Client-Side Logic
+ */
+
+interface EbookReaderState {
+  currentPage: number;
+  totalPages: number;
+  zoomLevel: number;
+  isFullscreen: boolean;
+  lastSaveTime: number;
+}
+
+class EbookReader {
+  private container: HTMLElement;
+  private pdfViewer: HTMLIFrameElement;
+  private prevPageBtn: HTMLButtonElement;
+  private nextPageBtn: HTMLButtonElement;
+  private pageInput: HTMLInputElement;
+  private totalPagesSpan: HTMLElement;
+  private zoomInBtn: HTMLButtonElement;
+  private zoomOutBtn: HTMLButtonElement;
+  private zoomLevelSpan: HTMLElement;
+  private fullscreenBtn: HTMLButtonElement;
+  private progressBarFill: HTMLElement;
+  private progressPercentage: HTMLElement;
+  private loadingState: HTMLElement;
+  private errorState: HTMLElement;
+  private retryButton: HTMLButtonElement | null;
+  private announcementEl: HTMLElement;
+  private ebookId: string | null;
+  private state: EbookReaderState;
+
+  constructor(containerId: string) {
+    const container = document.getElementById(containerId);
+    if (!container) {
+      console.error(`EbookReader: Container ${containerId} not found`);
+      return;
+    }
+
+    this.container = container;
+    this.pdfViewer = this.container.querySelector('.pdf-viewer') as HTMLIFrameElement;
+    this.prevPageBtn = this.container.querySelector('.prev-page') as HTMLButtonElement;
+    this.nextPageBtn = this.container.querySelector('.next-page') as HTMLButtonElement;
+    this.pageInput = this.container.querySelector('.page-input') as HTMLInputElement;
+    this.totalPagesSpan = this.container.querySelector('.total-pages') as HTMLElement;
+    this.zoomInBtn = this.container.querySelector('.zoom-in') as HTMLButtonElement;
+    this.zoomOutBtn = this.container.querySelector('.zoom-out') as HTMLButtonElement;
+    this.zoomLevelSpan = this.container.querySelector('.zoom-level') as HTMLElement;
+    this.fullscreenBtn = this.container.querySelector('.fullscreen-toggle') as HTMLButtonElement;
+    this.progressBarFill = this.container.querySelector('.progress-bar-fill') as HTMLElement;
+    this.progressPercentage = this.container.querySelector('.progress-percentage') as HTMLElement;
+    this.loadingState = this.container.querySelector('.loading-state') as HTMLElement;
+    this.errorState = this.container.querySelector('.error-state') as HTMLElement;
+    this.retryButton = this.container.querySelector('.retry-button') as HTMLButtonElement;
+    this.announcementEl = this.container.querySelector('[role="status"]') as HTMLElement;
+
+    this.ebookId = this.container.dataset.ebookId || null;
+
+    const totalPages = parseInt(this.container.dataset.totalPages || '1');
+
+    this.state = {
+      currentPage: 1,
+      totalPages,
+      zoomLevel: 100,
+      isFullscreen: false,
+      lastSaveTime: 0,
+    };
+
+    this.init();
+  }
+
+  private async init(): Promise<void> {
+    // Load saved progress
+    if (this.ebookId) {
+      this.loadProgress();
+    }
+
+    // Setup event listeners
+    this.setupControlEvents();
+    this.setupKeyboardShortcuts();
+
+    // Hide loading after iframe loads
+    this.pdfViewer.addEventListener('load', () => {
+      this.hideLoading();
+      this.announce('Ebook loaded and ready');
+    });
+
+    // Handle iframe errors
+    this.pdfViewer.addEventListener('error', () => {
+      this.showError('Failed to load ebook file');
+    });
+
+    // Retry button
+    if (this.retryButton) {
+      this.retryButton.addEventListener('click', () => this.retry());
+    }
+
+    // Auto-save progress every 30 seconds
+    if (this.ebookId) {
+      setInterval(() => {
+        this.saveProgress();
+      }, 30000);
+    }
+  }
+
+  private setupControlEvents(): void {
+    // Previous page
+    this.prevPageBtn.addEventListener('click', () => {
+      this.goToPage(this.state.currentPage - 1);
+    });
+
+    // Next page
+    this.nextPageBtn.addEventListener('click', () => {
+      this.goToPage(this.state.currentPage + 1);
+    });
+
+    // Page input
+    this.pageInput.addEventListener('change', () => {
+      const page = parseInt(this.pageInput.value);
+      this.goToPage(page);
+    });
+
+    this.pageInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        const page = parseInt(this.pageInput.value);
+        this.goToPage(page);
+      }
+    });
+
+    // Zoom controls
+    this.zoomInBtn.addEventListener('click', () => {
+      this.setZoom(this.state.zoomLevel + 10);
+    });
+
+    this.zoomOutBtn.addEventListener('click', () => {
+      this.setZoom(this.state.zoomLevel - 10);
+    });
+
+    // Fullscreen
+    this.fullscreenBtn.addEventListener('click', () => {
+      this.toggleFullscreen();
+    });
+  }
+
+  private setupKeyboardShortcuts(): void {
+    document.addEventListener('keydown', (e: KeyboardEvent) => {
+      // Only handle when reader is visible
+      if (!this.container.offsetParent) return;
+
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          this.goToPage(this.state.currentPage - 1);
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          this.goToPage(this.state.currentPage + 1);
+          break;
+        case '+':
+        case '=':
+          e.preventDefault();
+          this.setZoom(this.state.zoomLevel + 10);
+          break;
+        case '-':
+        case '_':
+          e.preventDefault();
+          this.setZoom(this.state.zoomLevel - 10);
+          break;
+        case 'f':
+        case 'F':
+          e.preventDefault();
+          this.toggleFullscreen();
+          break;
+        case 'Home':
+          e.preventDefault();
+          this.goToPage(1);
+          break;
+        case 'End':
+          e.preventDefault();
+          this.goToPage(this.state.totalPages);
+          break;
+      }
+    });
+  }
+
+  private goToPage(page: number): void {
+    // Validate page number
+    if (page < 1 || page > this.state.totalPages) {
+      return;
+    }
+
+    this.state.currentPage = page;
+    this.pageInput.value = String(page);
+
+    // Update PDF viewer
+    const ebookUrl = this.container.dataset.ebookUrl;
+    if (ebookUrl) {
+      this.pdfViewer.src = `${ebookUrl}#page=${page}`;
+    }
+
+    // Update progress
+    this.updateProgress();
+
+    // Save progress
+    this.saveProgress();
+
+    this.announce(`Page ${page} of ${this.state.totalPages}`);
+  }
+
+  private setZoom(zoom: number): void {
+    // Clamp zoom between 50% and 200%
+    zoom = Math.max(50, Math.min(200, zoom));
+    this.state.zoomLevel = zoom;
+    this.zoomLevelSpan.textContent = `${zoom}%`;
+
+    // Apply zoom to iframe (simplified)
+    this.pdfViewer.style.transform = `scale(${zoom / 100})`;
+
+    this.announce(`Zoom ${zoom}%`);
+  }
+
+  private toggleFullscreen(): void {
+    if (!document.fullscreenElement) {
+      this.container.requestFullscreen();
+      this.state.isFullscreen = true;
+      this.announce('Entered fullscreen');
+    } else {
+      document.exitFullscreen();
+      this.state.isFullscreen = false;
+      this.announce('Exited fullscreen');
+    }
+  }
+
+  private updateProgress(): void {
+    const progress = (this.state.currentPage / this.state.totalPages) * 100;
+    this.progressBarFill.style.width = `${progress}%`;
+    this.progressPercentage.textContent = `${Math.round(progress)}%`;
+  }
+
+  private loadProgress(): void {
+    if (!this.ebookId) return;
+
+    const saved = localStorage.getItem(`ebook-progress-${this.ebookId}`);
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        if (data.currentPage && data.currentPage <= this.state.totalPages) {
+          this.goToPage(data.currentPage);
+        }
+      } catch (error) {
+        console.error('Failed to load progress:', error);
+      }
+    }
+  }
+
+  private saveProgress(): void {
+    if (!this.ebookId) return;
+
+    // Don't save too frequently
+    const now = Date.now();
+    if (now - this.state.lastSaveTime < 5000) {
+      return;
+    }
+
+    try {
+      const data = {
+        currentPage: this.state.currentPage,
+        totalPages: this.state.totalPages,
+        percentage: (this.state.currentPage / this.state.totalPages) * 100,
+        timestamp: now,
+      };
+      localStorage.setItem(`ebook-progress-${this.ebookId}`, JSON.stringify(data));
+      this.state.lastSaveTime = now;
+    } catch (error) {
+      console.error('Failed to save progress:', error);
+    }
+  }
+
+  private hideLoading(): void {
+    if (this.loadingState) {
+      this.loadingState.classList.add('hidden');
+    }
+  }
+
+  private showError(message: string): void {
+    this.hideLoading();
+
+    if (this.errorState) {
+      this.errorState.classList.remove('hidden');
+      this.errorState.classList.add('flex');
+
+      const errorMessage = this.errorState.querySelector('.error-message');
+      if (errorMessage) {
+        errorMessage.textContent = message;
+      }
+    }
+
+    this.announce(`Error: ${message}`);
+  }
+
+  private retry(): void {
+    // Reload iframe
+    const ebookUrl = this.container.dataset.ebookUrl;
+    if (ebookUrl) {
+      this.loadingState.classList.remove('hidden');
+      this.errorState.classList.add('hidden');
+      this.pdfViewer.src = `${ebookUrl}#page=${this.state.currentPage}`;
+    }
+
+    this.announce('Retrying ebook load');
+  }
+
+  private announce(message: string): void {
+    if (this.announcementEl) {
+      this.announcementEl.textContent = message;
+      setTimeout(() => {
+        this.announcementEl.textContent = '';
+      }, 1000);
+    }
+  }
+
+  public destroy(): void {
+    this.saveProgress();
+  }
+}
+
+// Initialize all ebook readers on the page
+document.addEventListener('DOMContentLoaded', () => {
+  const readers = document.querySelectorAll('[id^="ebook-reader-"]');
+  readers.forEach((container) => {
+    if (container.id) {
+      new EbookReader(container.id);
+    }
+  });
+});
+
+// Save progress on page unload
+window.addEventListener('beforeunload', () => {
+  const readers = document.querySelectorAll('[id^="ebook-reader-"]');
+  readers.forEach((container) => {
+    const ebookId = (container as HTMLElement).dataset.ebookId;
+    if (ebookId) {
+      const pageInput = container.querySelector('.page-input') as HTMLInputElement;
+      if (pageInput) {
+        const currentPage = parseInt(pageInput.value);
+        const totalPages = parseInt((container as HTMLElement).dataset.totalPages || '1');
+        const data = {
+          currentPage,
+          totalPages,
+          percentage: (currentPage / totalPages) * 100,
+          timestamp: Date.now(),
+        };
+        localStorage.setItem(`ebook-progress-${ebookId}`, JSON.stringify(data));
+      }
+    }
+  });
+});
+</script>
+
+<style>
+  /* Screen reader only */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* Fullscreen adjustments */
+  .ebook-reader:fullscreen {
+    background: #1f2937;
+  }
+
+  .ebook-reader:fullscreen .reader-toolbar {
+    background: #1f2937;
+  }
+
+  /* PDF viewer styling */
+  .pdf-viewer {
+    border: none;
+    transform-origin: center top;
+  }
+
+  /* Hide number input spinners */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+</style>

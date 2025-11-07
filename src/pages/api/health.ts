@@ -26,6 +26,7 @@
 import type { APIRoute } from 'astro';
 import { getPool } from '../../lib/db';
 import { getRedisClient } from '../../lib/redis';
+import { captureException, addBreadcrumb } from '../../lib/sentry';
 
 // Application start time for uptime calculation
 const START_TIME = Date.now();
@@ -70,6 +71,13 @@ async function checkDatabase(): Promise<ServiceStatus> {
 
     const responseTime = Date.now() - startTime;
 
+    addBreadcrumb({
+      message: 'Database health check passed',
+      category: 'health',
+      level: 'info',
+      data: { responseTime },
+    });
+
     return {
       status: 'up',
       responseTime,
@@ -78,6 +86,20 @@ async function checkDatabase(): Promise<ServiceStatus> {
     const responseTime = Date.now() - startTime;
 
     console.error('[Health Check] Database check failed:', error);
+
+    // Log to Sentry
+    captureException(error, {
+      context: 'health_check',
+      service: 'database',
+      responseTime,
+    });
+
+    addBreadcrumb({
+      message: 'Database health check failed',
+      category: 'health',
+      level: 'error',
+      data: { responseTime },
+    });
 
     return {
       status: 'down',
@@ -101,6 +123,13 @@ async function checkRedis(): Promise<ServiceStatus> {
 
     const responseTime = Date.now() - startTime;
 
+    addBreadcrumb({
+      message: 'Redis health check passed',
+      category: 'health',
+      level: 'info',
+      data: { responseTime },
+    });
+
     return {
       status: 'up',
       responseTime,
@@ -109,6 +138,20 @@ async function checkRedis(): Promise<ServiceStatus> {
     const responseTime = Date.now() - startTime;
 
     console.error('[Health Check] Redis check failed:', error);
+
+    // Log to Sentry
+    captureException(error, {
+      context: 'health_check',
+      service: 'redis',
+      responseTime,
+    });
+
+    addBreadcrumb({
+      message: 'Redis health check failed',
+      category: 'health',
+      level: 'error',
+      data: { responseTime },
+    });
 
     return {
       status: 'down',
@@ -169,6 +212,13 @@ function determineOverallStatus(
  */
 export const GET: APIRoute = async () => {
   try {
+    // Log health check request
+    addBreadcrumb({
+      message: 'Health check requested',
+      category: 'health',
+      level: 'info',
+    });
+
     // Check all services in parallel
     const [database, redis] = await Promise.all([
       checkDatabase(),
@@ -196,6 +246,14 @@ export const GET: APIRoute = async () => {
       },
     };
 
+    // Log overall status
+    addBreadcrumb({
+      message: `Health check completed: ${overallStatus}`,
+      category: 'health',
+      level: overallStatus === 'healthy' ? 'info' : 'warning',
+      data: { status: overallStatus },
+    });
+
     // Return appropriate HTTP status code
     const httpStatus = overallStatus === 'healthy' ? 200 : 503;
 
@@ -212,6 +270,12 @@ export const GET: APIRoute = async () => {
   } catch (error) {
     // Unexpected error in health check itself
     console.error('[Health Check] Unexpected error:', error);
+
+    // Log to Sentry
+    captureException(error, {
+      context: 'health_check',
+      service: 'health_endpoint',
+    });
 
     const errorResponse = {
       status: 'unhealthy' as const,

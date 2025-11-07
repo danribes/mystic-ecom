@@ -1,0 +1,245 @@
+---
+/**
+ * Twitter Card Component
+ *
+ * Dedicated component for Twitter Card meta tags.
+ * Controls how URLs appear when shared on Twitter/X.
+ *
+ * Usage:
+ * ```astro
+ * <TwitterCard
+ *   card="summary_large_image"
+ *   title="Page Title"
+ *   description="Page description"
+ *   image="/images/twitter-card.jpg"
+ *   site="@yourbrand"
+ *   creator="@author"
+ * />
+ * ```
+ *
+ * Best Practices:
+ * - Summary card: 144x144px minimum (1:1 ratio)
+ * - Large image: 1200x628px (1.91:1 ratio)
+ * - Use @username format for site and creator
+ * - Images must be under 5MB
+ *
+ * Learn more: https://developer.twitter.com/en/docs/twitter-for-websites/cards
+ */
+
+interface Props {
+  /**
+   * Type of Twitter Card
+   * @default "summary_large_image"
+   */
+  card?: 'summary' | 'summary_large_image' | 'app' | 'player';
+
+  /**
+   * Twitter handle of the website (with @)
+   * @example "@spirituality"
+   */
+  site?: string;
+
+  /**
+   * Twitter handle of content creator (with @)
+   * @example "@janesmith"
+   */
+  creator?: string;
+
+  /**
+   * Title of content (70 characters max)
+   * @example "Complete Meditation Guide"
+   */
+  title: string;
+
+  /**
+   * Description of content (200 characters max)
+   * @example "Learn meditation from scratch with our guide"
+   */
+  description: string;
+
+  /**
+   * Image URL for the card
+   * @example "/images/meditation-card.jpg"
+   */
+  image: string;
+
+  /**
+   * Image alt text for accessibility
+   */
+  imageAlt?: string;
+
+  /**
+   * App-specific properties (when card="app")
+   */
+  appId?: {
+    iphone?: string;
+    ipad?: string;
+    googleplay?: string;
+  };
+
+  /**
+   * App name (when card="app")
+   */
+  appName?: {
+    iphone?: string;
+    ipad?: string;
+    googleplay?: string;
+  };
+
+  /**
+   * App URL scheme (when card="app")
+   */
+  appUrl?: {
+    iphone?: string;
+    ipad?: string;
+    googleplay?: string;
+  };
+
+  /**
+   * Player URL (when card="player")
+   */
+  playerUrl?: string;
+
+  /**
+   * Player width (when card="player")
+   */
+  playerWidth?: number;
+
+  /**
+   * Player height (when card="player")
+   */
+  playerHeight?: number;
+
+  /**
+   * Player stream content type (when card="player")
+   */
+  playerStream?: string;
+}
+
+const {
+  card = 'summary_large_image',
+  site,
+  creator,
+  title,
+  description,
+  image,
+  imageAlt,
+  appId,
+  appName,
+  appUrl,
+  playerUrl,
+  playerWidth,
+  playerHeight,
+  playerStream,
+} = Astro.props;
+
+// Get site URL from Astro config
+const siteUrl = Astro.site?.origin || Astro.url.origin;
+
+// Ensure image URL is absolute
+const absoluteImageUrl = image.startsWith('http')
+  ? image
+  : `${siteUrl}${image}`;
+
+// Use title as default alt text if not provided
+const imageAltText = imageAlt || title;
+
+// Validate card-specific requirements
+if (card === 'summary_large_image' && import.meta.env.DEV) {
+  // Large image card should have 1200x628px images
+  // This is a soft recommendation, actual validation would require image fetching
+  console.debug('TwitterCard: Using summary_large_image. Recommended image size: 1200x628px (1.91:1 ratio)');
+}
+
+if (card === 'summary' && import.meta.env.DEV) {
+  // Summary card should have square images (144x144px minimum)
+  console.debug('TwitterCard: Using summary. Recommended image size: 144x144px minimum (1:1 ratio)');
+}
+
+// Validate title length
+if (title.length > 70 && import.meta.env.DEV) {
+  console.warn(
+    `TwitterCard: Title length (${title.length} chars) exceeds recommended maximum (70 chars). ` +
+    `Long titles may be truncated on Twitter.`
+  );
+}
+
+// Validate description length
+if (description.length > 200 && import.meta.env.DEV) {
+  console.warn(
+    `TwitterCard: Description length (${description.length} chars) exceeds recommended maximum (200 chars). ` +
+    `Long descriptions may be truncated on Twitter.`
+  );
+}
+
+// Validate @username format
+if (site && !site.startsWith('@') && import.meta.env.DEV) {
+  console.warn(`TwitterCard: site should start with @ (got: "${site}"). Example: "@yourbrand"`);
+}
+
+if (creator && !creator.startsWith('@') && import.meta.env.DEV) {
+  console.warn(`TwitterCard: creator should start with @ (got: "${creator}"). Example: "@username"`);
+}
+---
+
+<!-- Twitter Card Meta Tags -->
+
+<!-- Required Properties -->
+<meta name="twitter:card" content={card} />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={absoluteImageUrl} />
+
+<!-- Optional Properties -->
+{site && <meta name="twitter:site" content={site} />}
+{creator && <meta name="twitter:creator" content={creator} />}
+{imageAlt && <meta name="twitter:image:alt" content={imageAltText} />}
+
+<!-- App Card Properties (when card="app") -->
+{card === 'app' && (
+  <>
+    {appName?.iphone && <meta name="twitter:app:name:iphone" content={appName.iphone} />}
+    {appName?.ipad && <meta name="twitter:app:name:ipad" content={appName.ipad} />}
+    {appName?.googleplay && <meta name="twitter:app:name:googleplay" content={appName.googleplay} />}
+
+    {appId?.iphone && <meta name="twitter:app:id:iphone" content={appId.iphone} />}
+    {appId?.ipad && <meta name="twitter:app:id:ipad" content={appId.ipad} />}
+    {appId?.googleplay && <meta name="twitter:app:id:googleplay" content={appId.googleplay} />}
+
+    {appUrl?.iphone && <meta name="twitter:app:url:iphone" content={appUrl.iphone} />}
+    {appUrl?.ipad && <meta name="twitter:app:url:ipad" content={appUrl.ipad} />}
+    {appUrl?.googleplay && <meta name="twitter:app:url:googleplay" content={appUrl.googleplay} />}
+  </>
+)}
+
+<!-- Player Card Properties (when card="player") -->
+{card === 'player' && (
+  <>
+    {playerUrl && <meta name="twitter:player" content={playerUrl} />}
+    {playerWidth && <meta name="twitter:player:width" content={playerWidth.toString()} />}
+    {playerHeight && <meta name="twitter:player:height" content={playerHeight.toString()} />}
+    {playerStream && <meta name="twitter:player:stream" content={playerStream} />}
+  </>
+)}
+
+<!--
+  Debug Information (Development Only)
+-->
+{import.meta.env.DEV && (
+  <script type="application/json" data-twitter-card-debug>
+    {JSON.stringify({
+      card,
+      title: title.substring(0, 70),
+      description: description.substring(0, 200),
+      image: absoluteImageUrl,
+      site,
+      creator,
+      warnings: {
+        titleTooLong: title.length > 70,
+        descriptionTooLong: description.length > 200,
+        siteNoAt: site && !site.startsWith('@'),
+        creatorNoAt: creator && !creator.startsWith('@'),
+      }
+    }, null, 2)}
+  </script>
+)}

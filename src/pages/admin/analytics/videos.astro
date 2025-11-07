@@ -10,7 +10,7 @@
  */
 
 import { getAnalyticsDashboardStats, getPopularVideos, getCourseVideoAnalytics } from '@/lib/analytics/videos';
-import { getAllCourses } from '@/lib/courses';
+import { getCourses } from '@/lib/courses';
 import { checkAdminAuth } from '@/lib/adminAuth';
 
 // Check admin authentication
@@ -22,7 +22,8 @@ if (!authResult.isAuthenticated) {
 // Fetch analytics data
 const dashboardStats = await getAnalyticsDashboardStats();
 const popularVideos = await getPopularVideos(10);
-const courses = await getAllCourses();
+const coursesResult = await getCourses({});
+const courses = coursesResult.courses;
 
 // Helper function to format duration
 function formatDuration(seconds: number): string {

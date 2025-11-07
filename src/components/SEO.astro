@@ -1,0 +1,301 @@
+---
+/**
+ * SEO Component
+ *
+ * Comprehensive SEO meta tags component for all pages.
+ * Includes Open Graph, Twitter Cards, and standard meta tags.
+ *
+ * Usage:
+ * ```astro
+ * <SEO
+ *   title="Page Title"
+ *   description="Page description for search engines"
+ *   keywords="keyword1, keyword2, keyword3"
+ * />
+ * ```
+ *
+ * Best Practices:
+ * - Title: 50-60 characters (optimal for search results)
+ * - Description: 150-160 characters (optimal for search snippets)
+ * - Keywords: 5-10 relevant keywords, comma-separated
+ */
+
+import OpenGraph from '@/components/OpenGraph.astro';
+import TwitterCard from '@/components/TwitterCard.astro';
+import StructuredData from '@/components/StructuredData.astro';
+import { generateWebSiteSchema } from '@/lib/structuredData';
+import { generateCanonicalUrlFromAstro } from '@/lib/canonicalUrl';
+import { generateHreflangFromAstro } from '@/lib/hreflang';
+
+interface Props {
+  /**
+   * Page title (will be appended with site name)
+   * @example "About Us" becomes "About Us | Spirituality Platform"
+   */
+  title: string;
+
+  /**
+   * Page description for search engines and social sharing
+   * @default "Discover spiritual growth through online courses, transformative events, and inspiring digital content."
+   */
+  description?: string;
+
+  /**
+   * Comma-separated keywords relevant to the page
+   * @default "spirituality, meditation, mindfulness, spiritual courses, personal growth, enlightenment"
+   */
+  keywords?: string;
+
+  /**
+   * Author name (optional, defaults to site author)
+   */
+  author?: string;
+
+  /**
+   * Canonical URL (optional, auto-generated from current URL if not provided)
+   */
+  canonical?: string;
+
+  /**
+   * Open Graph image URL for social media sharing
+   * @default "/images/og-default.jpg"
+   */
+  ogImage?: string;
+
+  /**
+   * Open Graph type (website, article, etc.)
+   * @default "website"
+   */
+  ogType?: 'website' | 'article' | 'profile' | 'book' | 'music' | 'video';
+
+  /**
+   * Twitter card type
+   * @default "summary_large_image"
+   */
+  twitterCard?: 'summary' | 'summary_large_image' | 'app' | 'player';
+
+  /**
+   * Twitter handle (optional)
+   * @example "@spirituality"
+   */
+  twitterSite?: string;
+
+  /**
+   * Twitter creator handle (optional)
+   * @example "@johndoe"
+   */
+  twitterCreator?: string;
+
+  /**
+   * Article published date (ISO 8601 format, for article type)
+   * @example "2025-11-06T10:00:00Z"
+   */
+  publishedTime?: string;
+
+  /**
+   * Article modified date (ISO 8601 format, for article type)
+   * @example "2025-11-06T15:30:00Z"
+   */
+  modifiedTime?: string;
+
+  /**
+   * Article author (for article type)
+   */
+  articleAuthor?: string;
+
+  /**
+   * Article section/category (for article type)
+   * @example "Meditation"
+   */
+  articleSection?: string;
+
+  /**
+   * Article tags (for article type)
+   * @example ["mindfulness", "meditation", "wellness"]
+   */
+  articleTags?: string[];
+
+  /**
+   * Disable search engine indexing (noindex)
+   * @default false
+   */
+  noindex?: boolean;
+
+  /**
+   * Disable following links on page (nofollow)
+   * @default false
+   */
+  nofollow?: boolean;
+
+  /**
+   * Language code
+   * @default "en"
+   */
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Discover spiritual growth through online courses, transformative events, and inspiring digital content. Join our community of seekers on a journey toward enlightenment and inner peace.',
+  keywords = 'spirituality, meditation, mindfulness, spiritual courses, personal growth, enlightenment, spiritual awakening, inner peace, consciousness, spiritual development',
+  author = 'Spirituality Platform',
+  canonical,
+  ogImage = '/images/og-default.jpg',
+  ogType = 'website',
+  twitterCard = 'summary_large_image',
+  twitterSite,
+  twitterCreator,
+  publishedTime,
+  modifiedTime,
+  articleAuthor,
+  articleSection,
+  articleTags,
+  noindex = false,
+  nofollow = false,
+  lang = 'en',
+} = Astro.props;
+
+// Site configuration
+const siteName = 'Spirituality Platform';
+const siteUrl = Astro.site?.origin || Astro.url.origin;
+
+// Construct full title (max 60 chars for optimal SEO)
+const fullTitle = title ? `${title} | ${siteName}` : siteName;
+
+// Truncate title if too long (Google displays ~60 chars)
+const displayTitle = fullTitle.length > 60
+  ? `${fullTitle.substring(0, 57)}...`
+  : fullTitle;
+
+// Truncate description if too long (Google displays ~160 chars)
+const displayDescription = description.length > 160
+  ? `${description.substring(0, 157)}...`
+  : description;
+
+// Generate canonical URL using utility function (T228)
+// Ensures proper formatting with trailing slashes, HTTPS, and no query params
+const canonicalURL = generateCanonicalUrlFromAstro(
+  Astro.url,
+  Astro.site,
+  canonical,
+  {
+    trailingSlash: true,
+    forceHttps: true,
+    removeQueryParams: true,
+    removeFragment: true,
+  }
+);
+
+// Generate absolute OG image URL
+const absoluteOgImage = ogImage.startsWith('http')
+  ? ogImage
+  : `${siteUrl}${ogImage}`;
+
+// Robots meta tag
+const robotsContent = [
+  noindex ? 'noindex' : 'index',
+  nofollow ? 'nofollow' : 'follow',
+].join(', ');
+
+// Generate hreflang tags for internationalization (T237)
+// Indicates alternate language versions of the page to search engines
+const hreflangLinks = generateHreflangFromAstro(
+  Astro.url,
+  Astro.site,
+  Astro.locals.locale || lang as 'en' | 'es'
+);
+---
+
+<!-- Primary Meta Tags -->
+<title>{displayTitle}</title>
+<meta name="title" content={displayTitle} />
+<meta name="description" content={displayDescription} />
+<meta name="keywords" content={keywords} />
+<meta name="author" content={author} />
+<meta name="language" content={lang} />
+<meta name="robots" content={robotsContent} />
+
+<!-- Canonical URL -->
+<link rel="canonical" href={canonicalURL} />
+
+<!-- Hreflang Tags for Internationalization (T237) -->
+<!-- Indicates alternate language versions to search engines -->
+{hreflangLinks.map(link => (
+  <link rel="alternate" hreflang={link.hreflang} href={link.href} />
+))}
+
+<!-- Open Graph / Facebook (via OpenGraph component) -->
+<OpenGraph
+  title={displayTitle}
+  description={displayDescription}
+  image={ogImage}
+  url={canonicalURL}
+  type={ogType}
+  siteName={siteName}
+  locale={lang === 'en' ? 'en_US' : lang}
+  imageAlt={displayTitle}
+  publishedTime={publishedTime}
+  modifiedTime={modifiedTime}
+  author={articleAuthor}
+  section={articleSection}
+  tags={articleTags}
+/>
+
+<!-- Twitter Card (via TwitterCard component) -->
+<TwitterCard
+  card={twitterCard}
+  title={displayTitle}
+  description={displayDescription}
+  image={ogImage}
+  imageAlt={displayTitle}
+  site={twitterSite}
+  creator={twitterCreator}
+/>
+
+<!-- Additional Meta Tags -->
+<meta name="generator" content={Astro.generator} />
+<meta name="theme-color" content="#7c3aed" />
+
+<!-- Structured Data (JSON-LD) -->
+<StructuredData
+  schema={generateWebSiteSchema({
+    name: siteName,
+    url: siteUrl,
+    description: displayDescription,
+    inLanguage: lang,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${siteUrl}/search?q={search_term_string}`
+      },
+      'query-input': 'required name=search_term_string'
+    }
+  })}
+/>
+
+{ogType === 'article' && (
+  <StructuredData
+    schema={{
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: displayTitle,
+      description: displayDescription,
+      image: absoluteOgImage,
+      datePublished: publishedTime,
+      dateModified: modifiedTime || publishedTime,
+      author: {
+        '@type': 'Person',
+        name: articleAuthor || author
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: siteName,
+        logo: {
+          '@type': 'ImageObject',
+          url: `${siteUrl}/images/logo.png`
+        }
+      }
+    }}
+  />
+)}

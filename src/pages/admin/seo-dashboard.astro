@@ -1,0 +1,663 @@
+---
+/**
+ * T239: SEO Monitoring Dashboard
+ *
+ * Administrative dashboard displaying SEO health metrics:
+ * - Pages indexed (from Google Search Console API)
+ * - Average keyword position
+ * - Click-through rate (CTR)
+ * - Structured data errors
+ * - Sitemap status
+ * - Core Web Vitals
+ *
+ * Features:
+ * - Real-time SEO metrics display
+ * - Visual health indicators
+ * - Integration with Google Search Console (optional)
+ * - Mock data for development
+ * - Responsive Tailwind CSS design
+ */
+
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import {
+  fetchSEOMetrics,
+  getMockSEOMetrics,
+  getStatusColorClass,
+  getStatusIcon,
+  getTrendIcon,
+  formatPercentage,
+  formatNumber,
+  type SEOMetrics,
+  type GSCConfig,
+} from '@/lib/seo/metrics';
+
+// Configuration for Google Search Console API
+const gscConfig: GSCConfig = {
+  siteUrl: import.meta.env.PUBLIC_SITE_URL || 'https://example.com',
+  apiKey: import.meta.env.GSC_API_KEY,
+  enabled: !!import.meta.env.GSC_API_KEY && import.meta.env.GSC_ENABLED === 'true',
+};
+
+// Fetch SEO metrics
+let metrics: SEOMetrics;
+let error: string | null = null;
+let usingMockData = false;
+
+try {
+  if (gscConfig.enabled) {
+    metrics = await fetchSEOMetrics(gscConfig);
+  } else {
+    // Use mock data for development
+    metrics = getMockSEOMetrics();
+    usingMockData = true;
+  }
+} catch (e) {
+  console.error('Failed to load SEO metrics:', e);
+  error = e instanceof Error ? e.message : 'Unknown error';
+  metrics = getMockSEOMetrics();
+  usingMockData = true;
+}
+
+// Helper functions
+function getHealthScoreColor(score: number): string {
+  if (score >= 80) return 'text-green-600';
+  if (score >= 60) return 'text-yellow-600';
+  return 'text-red-600';
+}
+
+function getHealthScoreGradient(score: number): string {
+  if (score >= 80) return 'from-green-500 to-green-600';
+  if (score >= 60) return 'from-yellow-500 to-yellow-600';
+  return 'from-red-500 to-red-600';
+}
+
+function formatDate(date: Date): string {
+  return new Date(date).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+---
+
+<AdminLayout
+  title="SEO Dashboard"
+  description="Monitor your site's SEO health and search engine performance"
+>
+  <!-- Development/Mock Data Notice -->
+  {usingMockData && (
+    <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div class="flex items-center">
+        <span class="text-blue-500 text-lg mr-2">ℹ️</span>
+        <div>
+          <h3 class="text-sm font-medium text-blue-800">Development Mode</h3>
+          <p class="text-sm text-blue-600 mt-1">
+            Using mock SEO data. To enable real data, configure Google Search Console API credentials in your environment variables.
+          </p>
+          <p class="text-xs text-blue-500 mt-2">
+            Set <code class="bg-blue-100 px-1 rounded">GSC_API_KEY</code> and <code class="bg-blue-100 px-1 rounded">GSC_ENABLED=true</code> in your <code class="bg-blue-100 px-1 rounded">.env</code> file.
+          </p>
+        </div>
+      </div>
+    </div>
+  )}
+
+  <!-- Error Banner -->
+  {error && (
+    <div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+      <div class="flex items-center">
+        <span class="text-red-500 text-lg mr-2">⚠️</span>
+        <div>
+          <h3 class="text-sm font-medium text-red-800">Error Loading SEO Metrics</h3>
+          <p class="text-sm text-red-600 mt-1">{error}</p>
+          <p class="text-xs text-red-500 mt-2">Showing fallback data. Please check API configuration.</p>
+        </div>
+      </div>
+    </div>
+  )}
+
+  <!-- Overall Health Score -->
+  <div class="mb-8">
+    <div class="bg-white rounded-xl shadow-lg p-6 border-2 border-gray-200">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-900">SEO Health Score</h2>
+          <p class="text-sm text-gray-600 mt-1">
+            Last updated: {formatDate(metrics.lastUpdated)}
+          </p>
+        </div>
+        <a
+          href="https://search.google.com/search-console"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg"
+        >
+          <span class="mr-2">🔍</span>
+          Open Google Search Console
+        </a>
+      </div>
+
+      <div class="flex items-center justify-center">
+        <div class="relative">
+          <!-- Circular Progress -->
+          <svg class="w-48 h-48 transform -rotate-90">
+            <circle
+              cx="96"
+              cy="96"
+              r="88"
+              stroke="currentColor"
+              stroke-width="12"
+              fill="none"
+              class="text-gray-200"
+            />
+            <circle
+              cx="96"
+              cy="96"
+              r="88"
+              stroke="currentColor"
+              stroke-width="12"
+              fill="none"
+              class={getHealthScoreColor(metrics.healthScore)}
+              stroke-dasharray={`${(metrics.healthScore / 100) * 553} 553`}
+              stroke-linecap="round"
+            />
+          </svg>
+          <!-- Score Display -->
+          <div class="absolute inset-0 flex items-center justify-center flex-col">
+            <span class={`text-6xl font-bold ${getHealthScoreColor(metrics.healthScore)}`}>
+              {metrics.healthScore}
+            </span>
+            <span class="text-xl text-gray-600 font-medium">/ 100</span>
+          </div>
+        </div>
+
+        <div class="ml-12 flex-1">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <span class="text-sm font-medium text-gray-700">Indexing</span>
+              <div class="flex items-center space-x-2">
+                <span class="text-sm font-bold">{formatPercentage(metrics.indexing.indexingRate)}</span>
+                <span class="text-lg">{getStatusIcon(metrics.indexing.status)}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <span class="text-sm font-medium text-gray-700">Keywords</span>
+              <div class="flex items-center space-x-2">
+                <span class="text-sm font-bold">Avg Pos: {metrics.keywords.averagePosition.toFixed(1)}</span>
+                <span class="text-lg">{getStatusIcon(metrics.keywords.status)}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <span class="text-sm font-medium text-gray-700">Click-Through Rate</span>
+              <div class="flex items-center space-x-2">
+                <span class="text-sm font-bold">{formatPercentage(metrics.ctr.ctr)}</span>
+                <span class="text-lg">{getStatusIcon(metrics.ctr.status)}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <span class="text-sm font-medium text-gray-700">Structured Data</span>
+              <div class="flex items-center space-x-2">
+                <span class="text-sm font-bold">{metrics.structuredData.validPages}/{metrics.structuredData.totalPages}</span>
+                <span class="text-lg">{getStatusIcon(metrics.structuredData.status)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metrics Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Indexing Card -->
+    <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-gray-900">📑 Indexing</h3>
+        <span class={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColorClass(metrics.indexing.status)}`}>
+          {getStatusIcon(metrics.indexing.status)} {metrics.indexing.status.toUpperCase()}
+        </span>
+      </div>
+
+      <div class="space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Indexed Pages</span>
+          <span class="text-lg font-bold text-gray-900">{formatNumber(metrics.indexing.indexedPages)}</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Total Pages</span>
+          <span class="text-lg font-bold text-gray-900">{formatNumber(metrics.indexing.totalPages)}</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Indexing Rate</span>
+          <span class="text-lg font-bold text-green-600">{formatPercentage(metrics.indexing.indexingRate)}</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Error Pages</span>
+          <span class="text-lg font-bold text-red-600">{formatNumber(metrics.indexing.errorPages)}</span>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="mt-4 pt-4 border-t border-gray-200">
+        <div class="w-full bg-gray-200 rounded-full h-3">
+          <div
+            class={`h-3 rounded-full bg-gradient-to-r ${metrics.indexing.indexingRate >= 0.9 ? 'from-green-500 to-green-600' : 'from-yellow-500 to-yellow-600'}`}
+            style={`width: ${metrics.indexing.indexingRate * 100}%`}
+          ></div>
+        </div>
+        <p class="text-xs text-gray-500 mt-2 text-center">
+          {metrics.indexing.indexedPages} of {metrics.indexing.totalPages} pages indexed
+        </p>
+      </div>
+    </div>
+
+    <!-- Keywords Card -->
+    <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-gray-900">🎯 Keywords</h3>
+        <span class={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColorClass(metrics.keywords.status)}`}>
+          {getStatusIcon(metrics.keywords.status)} {metrics.keywords.status.toUpperCase()}
+        </span>
+      </div>
+
+      <div class="space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Avg Position</span>
+          <div class="flex items-center space-x-2">
+            <span class="text-lg font-bold text-gray-900">{metrics.keywords.averagePosition.toFixed(1)}</span>
+            <span class="text-sm">{getTrendIcon(metrics.keywords.positionTrend)}</span>
+          </div>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Top 10 Keywords</span>
+          <span class="text-lg font-bold text-green-600">{metrics.keywords.top10Keywords}</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Top 3 Keywords</span>
+          <span class="text-lg font-bold text-purple-600">{metrics.keywords.top3Keywords}</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Total Tracked</span>
+          <span class="text-lg font-bold text-gray-900">{metrics.keywords.totalKeywords}</span>
+        </div>
+      </div>
+
+      <div class="mt-4 pt-4 border-t border-gray-200">
+        <a
+          href="#keyword-details"
+          class="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center justify-center"
+        >
+          View All Keywords
+          <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- CTR Card -->
+    <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-gray-900">👆 Click-Through Rate</h3>
+        <span class={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColorClass(metrics.ctr.status)}`}>
+          {getStatusIcon(metrics.ctr.status)} {metrics.ctr.status.toUpperCase()}
+        </span>
+      </div>
+
+      <div class="space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">CTR</span>
+          <div class="flex items-center space-x-2">
+            <span class="text-lg font-bold text-gray-900">{formatPercentage(metrics.ctr.ctr)}</span>
+            <span class="text-sm">{getTrendIcon(metrics.ctr.ctrTrend)}</span>
+          </div>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Total Clicks</span>
+          <span class="text-lg font-bold text-green-600">{formatNumber(metrics.ctr.clicks)}</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Impressions</span>
+          <span class="text-lg font-bold text-blue-600">{formatNumber(metrics.ctr.impressions)}</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">CTR Change</span>
+          <span class={`text-sm font-bold ${metrics.ctr.ctrChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {metrics.ctr.ctrChange >= 0 ? '+' : ''}{formatPercentage(metrics.ctr.ctrChange)}
+          </span>
+        </div>
+      </div>
+
+      <div class="mt-4 pt-4 border-t border-gray-200">
+        <div class="text-center">
+          <p class="text-2xl font-bold text-purple-600">{formatNumber(metrics.ctr.clicks)}</p>
+          <p class="text-xs text-gray-500">clicks from {formatNumber(metrics.ctr.impressions)} impressions</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Structured Data Card -->
+    <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-gray-900">🔍 Structured Data</h3>
+        <span class={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColorClass(metrics.structuredData.status)}`}>
+          {getStatusIcon(metrics.structuredData.status)} {metrics.structuredData.status.toUpperCase()}
+        </span>
+      </div>
+
+      <div class="space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Valid Pages</span>
+          <span class="text-lg font-bold text-green-600">{metrics.structuredData.validPages}</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">With Errors</span>
+          <span class="text-lg font-bold text-red-600">{metrics.structuredData.pagesWithErrors}</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">With Warnings</span>
+          <span class="text-lg font-bold text-yellow-600">{metrics.structuredData.pagesWithWarnings}</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Schema Types</span>
+          <span class="text-lg font-bold text-gray-900">{metrics.structuredData.types.length}</span>
+        </div>
+      </div>
+
+      <div class="mt-4 pt-4 border-t border-gray-200">
+        <a
+          href="https://search.google.com/test/rich-results"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center justify-center"
+        >
+          Test Structured Data
+          <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Sitemap Card -->
+    <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-gray-900">🗺️ Sitemap</h3>
+        <span class={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColorClass(metrics.sitemap.status)}`}>
+          {getStatusIcon(metrics.sitemap.status)} {metrics.sitemap.status.toUpperCase()}
+        </span>
+      </div>
+
+      <div class="space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">URLs in Sitemap</span>
+          <span class="text-lg font-bold text-gray-900">{formatNumber(metrics.sitemap.urlCount)}</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Processed by Google</span>
+          <span class="text-lg font-bold text-green-600">{formatNumber(metrics.sitemap.processedUrls)}</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Submitted to GSC</span>
+          <span class="text-lg font-bold">
+            {metrics.sitemap.submittedToGSC ? '✅ Yes' : '❌ No'}
+          </span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Errors</span>
+          <span class={`text-lg font-bold ${metrics.sitemap.errors.length > 0 ? 'text-red-600' : 'text-green-600'}`}>
+            {metrics.sitemap.errors.length}
+          </span>
+        </div>
+      </div>
+
+      <div class="mt-4 pt-4 border-t border-gray-200">
+        <a
+          href={metrics.sitemap.sitemapUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center justify-center"
+        >
+          View Sitemap
+          <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Core Web Vitals Card -->
+    <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-gray-900">⚡ Core Web Vitals</h3>
+        <span class={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColorClass(metrics.coreWebVitals.status)}`}>
+          {getStatusIcon(metrics.coreWebVitals.status)} {metrics.coreWebVitals.status.toUpperCase()}
+        </span>
+      </div>
+
+      <div class="space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">LCP (Largest Contentful Paint)</span>
+          <span class={`text-lg font-bold ${metrics.coreWebVitals.lcp <= 2.5 ? 'text-green-600' : 'text-yellow-600'}`}>
+            {metrics.coreWebVitals.lcp.toFixed(1)}s
+          </span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">FID (First Input Delay)</span>
+          <span class={`text-lg font-bold ${metrics.coreWebVitals.fid <= 100 ? 'text-green-600' : 'text-yellow-600'}`}>
+            {metrics.coreWebVitals.fid}ms
+          </span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">CLS (Cumulative Layout Shift)</span>
+          <span class={`text-lg font-bold ${metrics.coreWebVitals.cls <= 0.1 ? 'text-green-600' : 'text-yellow-600'}`}>
+            {metrics.coreWebVitals.cls.toFixed(2)}
+          </span>
+        </div>
+      </div>
+
+      <div class="mt-4 pt-4 border-t border-gray-200 space-y-2">
+        <div class="flex justify-between text-xs">
+          <span class="text-gray-600">Good LCP</span>
+          <span class="font-bold">{metrics.coreWebVitals.goodLCP}%</span>
+        </div>
+        <div class="flex justify-between text-xs">
+          <span class="text-gray-600">Good FID</span>
+          <span class="font-bold">{metrics.coreWebVitals.goodFID}%</span>
+        </div>
+        <div class="flex justify-between text-xs">
+          <span class="text-gray-600">Good CLS</span>
+          <span class="font-bold">{metrics.coreWebVitals.goodCLS}%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Keywords Table -->
+  {metrics.keywords.topKeywords.length > 0 && (
+    <div id="keyword-details" class="mb-8">
+      <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">🔝 Top Performing Keywords</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-gray-200">
+                <th class="text-left py-3 px-4 font-semibold text-gray-700">Keyword</th>
+                <th class="text-right py-3 px-4 font-semibold text-gray-700">Position</th>
+                <th class="text-right py-3 px-4 font-semibold text-gray-700">Clicks</th>
+                <th class="text-right py-3 px-4 font-semibold text-gray-700">Impressions</th>
+                <th class="text-right py-3 px-4 font-semibold text-gray-700">CTR</th>
+              </tr>
+            </thead>
+            <tbody>
+              {metrics.keywords.topKeywords.map((keyword, index) => (
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                  <td class="py-3 px-4 font-medium text-gray-900">{keyword.keyword}</td>
+                  <td class="py-3 px-4 text-right">
+                    <span class={`font-bold ${keyword.position <= 3 ? 'text-green-600' : keyword.position <= 10 ? 'text-blue-600' : 'text-gray-600'}`}>
+                      {keyword.position.toFixed(1)}
+                    </span>
+                  </td>
+                  <td class="py-3 px-4 text-right font-medium text-gray-700">{formatNumber(keyword.clicks)}</td>
+                  <td class="py-3 px-4 text-right text-gray-600">{formatNumber(keyword.impressions)}</td>
+                  <td class="py-3 px-4 text-right font-medium text-purple-600">{formatPercentage(keyword.ctr)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )}
+
+  <!-- Structured Data Types -->
+  {metrics.structuredData.types.length > 0 && (
+    <div class="mb-8">
+      <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">📋 Structured Data Types</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {metrics.structuredData.types.map((type) => (
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-semibold text-gray-900">{type.type}</span>
+                <span class={`text-lg ${type.errors === 0 ? '✅' : '⚠️'}`}>
+                  {type.errors === 0 ? '✅' : '⚠️'}
+                </span>
+              </div>
+              <div class="space-y-1 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Total</span>
+                  <span class="font-medium">{type.count}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Valid</span>
+                  <span class="font-medium text-green-600">{type.valid}</span>
+                </div>
+                {type.errors > 0 && (
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">Errors</span>
+                    <span class="font-medium text-red-600">{type.errors}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )}
+
+  <!-- Quick Actions -->
+  <div class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-200">
+    <h3 class="text-lg font-bold text-gray-900 mb-4">⚡ Quick Actions</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <a
+        href="https://search.google.com/search-console"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex items-center justify-center px-4 py-3 bg-white rounded-lg border border-gray-300 hover:border-purple-500 hover:shadow-md transition-all text-center"
+      >
+        <span class="mr-2">🔍</span>
+        <span class="font-medium text-gray-900">Search Console</span>
+      </a>
+
+      <a
+        href="https://search.google.com/test/rich-results"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex items-center justify-center px-4 py-3 bg-white rounded-lg border border-gray-300 hover:border-purple-500 hover:shadow-md transition-all text-center"
+      >
+        <span class="mr-2">🧪</span>
+        <span class="font-medium text-gray-900">Rich Results Test</span>
+      </a>
+
+      <a
+        href={metrics.sitemap.sitemapUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex items-center justify-center px-4 py-3 bg-white rounded-lg border border-gray-300 hover:border-purple-500 hover:shadow-md transition-all text-center"
+      >
+        <span class="mr-2">🗺️</span>
+        <span class="font-medium text-gray-900">View Sitemap</span>
+      </a>
+
+      <a
+        href="https://pagespeed.web.dev/"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex items-center justify-center px-4 py-3 bg-white rounded-lg border border-gray-300 hover:border-purple-500 hover:shadow-md transition-all text-center"
+      >
+        <span class="mr-2">⚡</span>
+        <span class="font-medium text-gray-900">PageSpeed Insights</span>
+      </a>
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  /* Smooth animations */
+  .hover\:shadow-lg {
+    transition: box-shadow 0.3s ease;
+  }
+
+  /* Custom scrollbar for table */
+  .overflow-x-auto::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+</style>
+
+<script>
+  /**
+   * SEO Dashboard Interactivity
+   *
+   * Features:
+   * - Auto-refresh metrics (optional)
+   * - Export functionality
+   * - Filtering and sorting
+   */
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Add smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    // Log dashboard view for analytics
+    if (typeof window !== 'undefined' && 'gtag' in window) {
+      // @ts-ignore
+      window.gtag?.('event', 'page_view', {
+        page_title: 'SEO Dashboard',
+        page_location: window.location.href,
+        page_path: window.location.pathname,
+      });
+    }
+
+    // Add copy-to-clipboard for metrics (future enhancement)
+    // TODO: Implement export to CSV/PDF functionality
+  });
+</script>

@@ -1,0 +1,157 @@
+---
+/**
+ * Structured Data Component
+ *
+ * Renders Schema.org structured data as JSON-LD in the page head.
+ * Supports single or multiple schema objects.
+ *
+ * Usage:
+ * ```astro
+ * import StructuredData from '@/components/StructuredData.astro';
+ * import { generateCourseSchema } from '@/lib/structuredData';
+ *
+ * const courseSchema = generateCourseSchema({
+ *   name: 'Meditation Course',
+ *   description: 'Learn meditation',
+ *   provider: {
+ *     '@type': 'Organization',
+ *     name: 'Spirituality Platform'
+ *   }
+ * });
+ * ---
+ *
+ * <StructuredData schema={courseSchema} />
+ * ```
+ *
+ * Multiple schemas:
+ * ```astro
+ * <StructuredData schemas={[orgSchema, websiteSchema, breadcrumbSchema]} />
+ * ```
+ *
+ * Best Practices:
+ * - Always validate schemas before rendering
+ * - Use appropriate schema types for content
+ * - Include required properties for each type
+ * - Test with Google Rich Results Test
+ *
+ * @see https://schema.org/
+ * @see https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data
+ */
+
+interface Props {
+  /**
+   * Single schema object to render
+   */
+  schema?: Record<string, unknown>;
+
+  /**
+   * Multiple schema objects to render
+   */
+  schemas?: Record<string, unknown>[];
+
+  /**
+   * Pretty print JSON for development
+   * @default true in development, false in production
+   */
+  prettyPrint?: boolean;
+}
+
+const {
+  schema,
+  schemas,
+  prettyPrint = import.meta.env.DEV,
+} = Astro.props;
+
+// Validate that either schema or schemas is provided
+if (!schema && !schemas) {
+  if (import.meta.env.DEV) {
+    console.warn('StructuredData: Either schema or schemas prop must be provided');
+  }
+}
+
+// Combine single schema or multiple schemas into an array
+const schemaArray: Record<string, unknown>[] = [];
+
+if (schema) {
+  schemaArray.push(schema);
+}
+
+if (schemas) {
+  schemaArray.push(...schemas);
+}
+
+// Filter out empty or invalid schemas
+const validSchemas = schemaArray.filter((s) => {
+  if (!s || typeof s !== 'object') {
+    if (import.meta.env.DEV) {
+      console.warn('StructuredData: Invalid schema object detected', s);
+    }
+    return false;
+  }
+
+  if (!s['@type']) {
+    if (import.meta.env.DEV) {
+      console.warn('StructuredData: Schema missing @type property', s);
+    }
+    return false;
+  }
+
+  return true;
+});
+
+// Development validation
+if (import.meta.env.DEV && validSchemas.length > 0) {
+  console.debug(`StructuredData: Rendering ${validSchemas.length} schema(s)`, {
+    types: validSchemas.map((s) => s['@type']),
+  });
+
+  // Check for common mistakes
+  validSchemas.forEach((s) => {
+    // Check for required context
+    if (!s['@context']) {
+      console.warn(`StructuredData: Schema ${s['@type']} missing @context. Should be "https://schema.org"`);
+    }
+
+    // Check for URLs that should be absolute
+    const urlFields = ['url', 'image', 'logo'];
+    urlFields.forEach((field) => {
+      const value = s[field];
+      if (value && typeof value === 'string' && value.startsWith('/')) {
+        console.warn(
+          `StructuredData: ${s['@type']}.${field} should be absolute URL (starts with http). ` +
+          `Received: "${value}"`
+        );
+      }
+    });
+
+    // Check for dates in correct format
+    const dateFields = ['startDate', 'endDate', 'datePublished', 'dateModified', 'foundingDate'];
+    dateFields.forEach((field) => {
+      const value = s[field];
+      if (value && typeof value === 'string') {
+        const iso8601Pattern = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?)?$/;
+        if (!iso8601Pattern.test(value)) {
+          console.warn(
+            `StructuredData: ${s['@type']}.${field} should be ISO 8601 format. ` +
+            `Received: "${value}". Example: "2025-11-06" or "2025-11-06T10:00:00Z"`
+          );
+        }
+      }
+    });
+  });
+}
+---
+
+{validSchemas.map((schemaData) => (
+  <script
+    type="application/ld+json"
+    set:html={prettyPrint ? JSON.stringify(schemaData, null, 2) : JSON.stringify(schemaData)}
+    data-schema-type={schemaData['@type']}
+  />
+))}
+
+{import.meta.env.DEV && validSchemas.length === 0 && (schema || schemas) && (
+  <!-- Development warning for invalid schemas -->
+  <!-- This comment will be visible in page source during development -->
+  <!-- StructuredData Warning: No valid schemas rendered. Check console for details. -->
+)}

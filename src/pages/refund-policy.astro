@@ -1,0 +1,625 @@
+---
+/**
+ * Refund Policy Page (T150)
+ *
+ * Comprehensive refund policy for courses, events, and services.
+ * Last Updated: November 6, 2025
+ */
+
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+const lastUpdated = 'November 6, 2025';
+const effectiveDate = 'November 6, 2025';
+---
+
+<BaseLayout
+  title="Refund Policy"
+  description="Learn about our refund policy for courses, events, and services. We offer a 30-day money-back guarantee for courses and flexible event cancellation options."
+  keywords="refund policy, money-back guarantee, course refunds, event cancellation, spirituality platform"
+>
+  <div class="container mx-auto px-lg py-2xl max-w-4xl">
+    <!-- Header -->
+    <header class="mb-2xl text-center">
+      <h1 class="mb-md text-4xl font-bold text-text">Refund Policy</h1>
+      <p class="text-text-light">
+        Last Updated: <time datetime={effectiveDate}>{lastUpdated}</time>
+      </p>
+    </header>
+
+    <!-- Introduction -->
+    <section class="mb-2xl rounded-xl bg-surface p-xl">
+      <p class="mb-md text-lg leading-relaxed text-text-light">
+        At Spirituality Platform, we want you to be completely satisfied with your purchase. This Refund Policy explains our refund and return policies for courses, events, and other services.
+      </p>
+      <p class="text-lg leading-relaxed text-text-light">
+        We offer a <strong class="text-text">30-day money-back guarantee</strong> for course purchases and flexible cancellation options for event bookings. Please read this policy carefully to understand your rights and our procedures.
+      </p>
+    </section>
+
+    <!-- Table of Contents -->
+    <nav class="mb-2xl rounded-xl bg-background p-lg" aria-label="Table of Contents">
+      <h2 class="mb-md text-xl font-bold text-text">Table of Contents</h2>
+      <ol class="space-y-xs text-text-light">
+        <li><a href="#course-refunds" class="hover:text-primary transition-colors">1. Course Refunds</a></li>
+        <li><a href="#event-refunds" class="hover:text-primary transition-colors">2. Event Refunds and Cancellations</a></li>
+        <li><a href="#refund-exceptions" class="hover:text-primary transition-colors">3. Refund Exceptions</a></li>
+        <li><a href="#refund-process" class="hover:text-primary transition-colors">4. How to Request a Refund</a></li>
+        <li><a href="#processing-time" class="hover:text-primary transition-colors">5. Refund Processing Time</a></li>
+        <li><a href="#payment-method" class="hover:text-primary transition-colors">6. Refund Payment Method</a></li>
+        <li><a href="#partial-refunds" class="hover:text-primary transition-colors">7. Partial Refunds</a></li>
+        <li><a href="#no-refund-situations" class="hover:text-primary transition-colors">8. Non-Refundable Items</a></li>
+        <li><a href="#chargebacks" class="hover:text-primary transition-colors">9. Chargebacks and Disputes</a></li>
+        <li><a href="#changes-to-policy" class="hover:text-primary transition-colors">10. Changes to This Policy</a></li>
+        <li><a href="#contact" class="hover:text-primary transition-colors">11. Contact Information</a></li>
+      </ol>
+    </nav>
+
+    <!-- Main Content -->
+    <article class="prose prose-lg max-w-none">
+      <!-- Section 1 -->
+      <section id="course-refunds" class="mb-2xl scroll-mt-lg">
+        <h2 class="mb-lg text-2xl font-bold text-text">1. Course Refunds</h2>
+        <div class="space-y-md text-text-light leading-relaxed">
+          <h3 class="text-xl font-semibold text-text">1.1 30-Day Money-Back Guarantee</h3>
+          <p>
+            We offer a <strong class="text-text">30-day money-back guarantee</strong> for all course purchases. If you're not satisfied with a course for any reason, you can request a full refund within 30 days of your purchase date.
+          </p>
+
+          <h3 class="text-xl font-semibold text-text">1.2 Eligibility Requirements</h3>
+          <p>To be eligible for a course refund, the following conditions must be met:</p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Time Limit:</strong> Request must be made within 30 days of purchase</li>
+            <li><strong>Course Progress:</strong> You must not have completed more than 90% of the course content</li>
+            <li><strong>Certificate:</strong> If you've received a completion certificate, refunds are not available</li>
+            <li><strong>Purchase Method:</strong> Refunds apply to direct purchases only (not gift purchases redeemed by recipients)</li>
+            <li><strong>Account Status:</strong> Your account must be in good standing with no violations of our Terms of Service</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">1.3 How Course Refunds Work</h3>
+          <p>
+            When you request a course refund:
+          </p>
+          <ol class="list-decimal ml-lg space-y-xs">
+            <li>Submit a refund request through your account dashboard or contact support</li>
+            <li>We'll review your request within 2-3 business days</li>
+            <li>If approved, your refund will be processed to your original payment method</li>
+            <li>You'll lose access to the course content immediately upon refund approval</li>
+            <li>All certificates earned will be revoked</li>
+          </ol>
+
+          <h3 class="text-xl font-semibold text-text">1.4 Course Bundle Refunds</h3>
+          <p>
+            For course bundles purchased at a discounted price:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Full bundle refunds are available within 30 days if no courses have been completed</li>
+            <li>Partial refunds are calculated based on individual course prices (not bundle discount price)</li>
+            <li>If you've completed any course in the bundle beyond 90%, the entire bundle becomes non-refundable</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 2 -->
+      <section id="event-refunds" class="mb-2xl scroll-mt-lg">
+        <h2 class="mb-lg text-2xl font-bold text-text">2. Event Refunds and Cancellations</h2>
+        <div class="space-y-md text-text-light leading-relaxed">
+          <h3 class="text-xl font-semibold text-text">2.1 Event Cancellation Timeline</h3>
+          <p>
+            Event refunds are based on when you cancel your booking:
+          </p>
+          <div class="rounded-lg bg-background p-lg my-md">
+            <table class="w-full">
+              <thead>
+                <tr class="border-b border-text/20">
+                  <th class="py-sm px-md text-left text-text">Cancellation Time</th>
+                  <th class="py-sm px-md text-left text-text">Refund Amount</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-light">
+                <tr class="border-b border-text/10">
+                  <td class="py-sm px-md">More than 30 days before event</td>
+                  <td class="py-sm px-md font-semibold text-text">100% refund</td>
+                </tr>
+                <tr class="border-b border-text/10">
+                  <td class="py-sm px-md">15-30 days before event</td>
+                  <td class="py-sm px-md font-semibold text-text">75% refund</td>
+                </tr>
+                <tr class="border-b border-text/10">
+                  <td class="py-sm px-md">7-14 days before event</td>
+                  <td class="py-sm px-md font-semibold text-text">50% refund</td>
+                </tr>
+                <tr class="border-b border-text/10">
+                  <td class="py-sm px-md">3-6 days before event</td>
+                  <td class="py-sm px-md font-semibold text-text">25% refund</td>
+                </tr>
+                <tr>
+                  <td class="py-sm px-md">Less than 3 days before event</td>
+                  <td class="py-sm px-md font-semibold text-error">No refund (credit offered)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 class="text-xl font-semibold text-text">2.2 Event Credits</h3>
+          <p>
+            If you cancel within 3 days of the event:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>No monetary refund is available</li>
+            <li>You'll receive a <strong>credit equal to 50%</strong> of your registration fee</li>
+            <li>Credits can be used toward any future event within 12 months</li>
+            <li>Credits are non-transferable and cannot be redeemed for cash</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">2.3 Event Organizer Cancellations</h3>
+          <p>
+            If we cancel or significantly modify an event:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>You'll receive a <strong>full 100% refund</strong> regardless of timing</li>
+            <li>Refunds are processed automatically within 5 business days</li>
+            <li>You'll also receive a 20% discount code for future events</li>
+            <li>We'll notify you immediately via email and dashboard notification</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">2.4 Weather and Force Majeure</h3>
+          <p>
+            For outdoor events affected by weather or circumstances beyond our control:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>We'll attempt to reschedule the event to a suitable date</li>
+            <li>If rescheduling isn't possible, full refunds will be provided</li>
+            <li>You can choose between a refund or transfer to another event</li>
+            <li>Travel expenses are not covered by our refund policy</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 3 -->
+      <section id="refund-exceptions" class="mb-2xl scroll-mt-lg">
+        <h2 class="mb-lg text-2xl font-bold text-text">3. Refund Exceptions</h2>
+        <div class="space-y-md text-text-light leading-relaxed">
+          <p>
+            The following situations are <strong class="text-text">not eligible</strong> for refunds:
+          </p>
+
+          <h3 class="text-xl font-semibold text-text">3.1 Completed Courses</h3>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Courses where you've completed more than 90% of the content</li>
+            <li>Courses where you've received and downloaded a completion certificate</li>
+            <li>Courses completed more than 30 days ago</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">3.2 Gift Purchases</h3>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Once a gift code has been redeemed by the recipient</li>
+            <li>Gift purchaser can request refund only if code hasn't been redeemed</li>
+            <li>Recipients cannot request refunds for gifted courses or events</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">3.3 Subscription Services</h3>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Subscription fees are non-refundable once the billing period begins</li>
+            <li>You can cancel anytime, but no refunds for partial months</li>
+            <li>Access continues until the end of the current billing period</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">3.4 Promotional Purchases</h3>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Items purchased during special promotions (Black Friday, etc.) are final sale</li>
+            <li>Promotional terms are clearly stated at time of purchase</li>
+            <li>Free bonus items included with purchases are not separately refundable</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">3.5 Terms of Service Violations</h3>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Accounts suspended or terminated for Terms of Service violations</li>
+            <li>Evidence of fraud, abuse, or unauthorized account sharing</li>
+            <li>Attempts to circumvent our refund policies</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 4 -->
+      <section id="refund-process" class="mb-2xl scroll-mt-lg">
+        <h2 class="mb-lg text-2xl font-bold text-text">4. How to Request a Refund</h2>
+        <div class="space-y-md text-text-light leading-relaxed">
+          <h3 class="text-xl font-semibold text-text">4.1 Online Refund Request</h3>
+          <p>
+            The fastest way to request a refund:
+          </p>
+          <ol class="list-decimal ml-lg space-y-xs">
+            <li>Log in to your account at <a href="/account" class="text-primary hover:underline">spiritualityplatform.com/account</a></li>
+            <li>Navigate to "Purchase History" in your dashboard</li>
+            <li>Find the course or event you want to refund</li>
+            <li>Click "Request Refund" button next to the purchase</li>
+            <li>Select a reason from the dropdown menu (optional but helpful)</li>
+            <li>Add any additional comments or feedback</li>
+            <li>Submit your request</li>
+          </ol>
+
+          <h3 class="text-xl font-semibold text-text">4.2 Email Refund Request</h3>
+          <p>
+            You can also request a refund by email:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Email:</strong> <a href="mailto:refunds@spiritualityplatform.com" class="text-primary hover:underline">refunds@spiritualityplatform.com</a></li>
+            <li><strong>Include:</strong> Your account email, order number, and reason for refund</li>
+            <li><strong>Response Time:</strong> We'll respond within 2-3 business days</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">4.3 Required Information</h3>
+          <p>
+            To process your refund efficiently, please provide:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Your account email address</li>
+            <li>Order number or transaction ID</li>
+            <li>Course or event name</li>
+            <li>Reason for refund (optional but helps us improve)</li>
+            <li>Any relevant screenshots or documentation</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">4.4 Refund Review Process</h3>
+          <p>
+            Once we receive your request:
+          </p>
+          <ol class="list-decimal ml-lg space-y-xs">
+            <li>We'll verify your purchase and eligibility</li>
+            <li>Review any special circumstances or exceptions</li>
+            <li>Approve or deny the request based on this policy</li>
+            <li>Send you an email notification with the decision</li>
+            <li>Process approved refunds within 5-7 business days</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- Section 5 -->
+      <section id="processing-time" class="mb-2xl scroll-mt-lg">
+        <h2 class="mb-lg text-2xl font-bold text-text">5. Refund Processing Time</h2>
+        <div class="space-y-md text-text-light leading-relaxed">
+          <h3 class="text-xl font-semibold text-text">5.1 Our Processing Time</h3>
+          <p>
+            Once your refund is approved:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Approval Time:</strong> 2-3 business days to review and approve</li>
+            <li><strong>Processing Time:</strong> 5-7 business days to process the refund</li>
+            <li><strong>Total Time:</strong> Typically 7-10 business days from request to completion</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">5.2 Bank Processing Time</h3>
+          <p>
+            After we process your refund, your bank or credit card company may take additional time:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li><strong>Credit Cards:</strong> 3-5 business days for refund to appear</li>
+            <li><strong>Debit Cards:</strong> 5-10 business days for refund to appear</li>
+            <li><strong>PayPal:</strong> 1-3 business days for refund to appear</li>
+            <li><strong>Bank Transfers:</strong> 7-10 business days for refund to appear</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">5.3 Expedited Refunds</h3>
+          <p>
+            In special circumstances, we may offer expedited processing:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Technical issues preventing course access</li>
+            <li>Billing errors or duplicate charges</li>
+            <li>Event cancellations by the organizer</li>
+            <li>Contact support for expedited processing requests</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">5.4 Tracking Your Refund</h3>
+          <p>
+            You can track your refund status:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Check your account dashboard under "Refund Requests"</li>
+            <li>Email notifications at each stage of the process</li>
+            <li>Contact support for status updates anytime</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 6 -->
+      <section id="payment-method" class="mb-2xl scroll-mt-lg">
+        <h2 class="mb-lg text-2xl font-bold text-text">6. Refund Payment Method</h2>
+        <div class="space-y-md text-text-light leading-relaxed">
+          <h3 class="text-xl font-semibold text-text">6.1 Original Payment Method</h3>
+          <p>
+            Refunds are always issued to your <strong class="text-text">original payment method</strong>:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>If you paid by credit card, refund goes to that card</li>
+            <li>If you paid by PayPal, refund goes to your PayPal account</li>
+            <li>If you paid by bank transfer, refund goes to that bank account</li>
+            <li>We cannot issue refunds to different payment methods or accounts</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">6.2 Expired or Cancelled Cards</h3>
+          <p>
+            If your payment method is no longer valid:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Contact your bank - most banks can still receive refunds to expired cards</li>
+            <li>Update your payment method in your account before requesting refund</li>
+            <li>Contact support if you need alternative refund arrangements</li>
+            <li>We may require additional verification for security</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">6.3 Account Credits</h3>
+          <p>
+            In some cases, you may choose to receive account credit instead of a refund:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Credits are issued immediately (no processing delay)</li>
+            <li>Can be used for any course or event purchase</li>
+            <li>Never expire and can be used anytime</li>
+            <li>May include a bonus percentage (e.g., 110% credit for 100% refund)</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">6.4 Currency and Exchange Rates</h3>
+          <p>
+            For international purchases:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Refunds are issued in the original currency (USD)</li>
+            <li>Exchange rates may differ between purchase and refund dates</li>
+            <li>Your bank may charge foreign transaction fees (both ways)</li>
+            <li>We're not responsible for exchange rate fluctuations or bank fees</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 7 -->
+      <section id="partial-refunds" class="mb-2xl scroll-mt-lg">
+        <h2 class="mb-lg text-2xl font-bold text-text">7. Partial Refunds</h2>
+        <div class="space-y-md text-text-light leading-relaxed">
+          <h3 class="text-xl font-semibold text-text">7.1 When Partial Refunds Apply</h3>
+          <p>
+            Partial refunds may be issued in these situations:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Course bundles where some courses have been completed</li>
+            <li>Event cancellations within the sliding scale timeline</li>
+            <li>Subscription cancellations with partial month unused</li>
+            <li>Special circumstances evaluated case-by-case</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">7.2 Partial Refund Calculation</h3>
+          <p>
+            How we calculate partial refunds:
+          </p>
+          <div class="rounded-lg bg-background p-lg my-md">
+            <p class="font-semibold text-text mb-sm">Course Bundles:</p>
+            <ul class="list-disc ml-lg space-y-xs mb-md">
+              <li>Refund = (Bundle Price) - (Completed Courses at Individual Price)</li>
+              <li>Example: $300 bundle, completed $100 course = $200 refund</li>
+            </ul>
+
+            <p class="font-semibold text-text mb-sm">Event Cancellations:</p>
+            <ul class="list-disc ml-lg space-y-xs mb-md">
+              <li>Refund = (Ticket Price) × (Refund Percentage from Timeline)</li>
+              <li>Example: $200 ticket, 50% timeline = $100 refund</li>
+            </ul>
+
+            <p class="font-semibold text-text mb-sm">Proration:</p>
+            <ul class="list-disc ml-lg space-y-xs">
+              <li>Refund = (Total Price) ÷ (Total Days) × (Unused Days)</li>
+              <li>Example: $365 annual, 300 days unused = $300 refund</li>
+            </ul>
+          </div>
+
+          <h3 class="text-xl font-semibold text-text">7.3 Processing Fees</h3>
+          <p>
+            We do not deduct processing fees from refunds:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>You'll receive the full refund amount owed</li>
+            <li>We absorb all payment processing fees</li>
+            <li>Exception: Your bank may charge fees for receiving refunds</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 8 -->
+      <section id="no-refund-situations" class="mb-2xl scroll-mt-lg">
+        <h2 class="mb-lg text-2xl font-bold text-text">8. Non-Refundable Items</h2>
+        <div class="space-y-md text-text-light leading-relaxed">
+          <p>
+            The following items are <strong class="text-text">never refundable</strong>:
+          </p>
+
+          <h3 class="text-xl font-semibold text-text">8.1 Digital Downloads</h3>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>eBooks, PDFs, or other downloadable content once downloaded</li>
+            <li>Audio recordings or meditation tracks once accessed</li>
+            <li>Templates, worksheets, or digital resources once downloaded</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">8.2 Physical Products</h3>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Physical books, materials, or merchandise once shipped</li>
+            <li>Custom or personalized items created to your specifications</li>
+            <li>Items marked "final sale" at time of purchase</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">8.3 Services Rendered</h3>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>One-on-one coaching or consultation sessions already completed</li>
+            <li>Group sessions or workshops you attended (even partially)</li>
+            <li>Custom research or personalized reports already delivered</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">8.4 Third-Party Services</h3>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Services provided by third-party instructors or facilitators</li>
+            <li>External certifications or credentials issued by partner organizations</li>
+            <li>Travel or accommodation booked through external providers</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">8.5 Administrative Fees</h3>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Account setup or activation fees (if applicable)</li>
+            <li>Verification or credential check fees</li>
+            <li>Late payment or reinstatement fees</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 9 -->
+      <section id="chargebacks" class="mb-2xl scroll-mt-lg">
+        <h2 class="mb-lg text-2xl font-bold text-text">9. Chargebacks and Disputes</h2>
+        <div class="space-y-md text-text-light leading-relaxed">
+          <h3 class="text-xl font-semibold text-text">9.1 Contact Us First</h3>
+          <p>
+            Before filing a chargeback with your bank, <strong class="text-text">please contact us first</strong>:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>We can often resolve issues faster than the chargeback process</li>
+            <li>Chargebacks can take 60-90 days and may not succeed</li>
+            <li>We're committed to fair refund policies and customer satisfaction</li>
+            <li>Multiple chargebacks may result in account suspension</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">9.2 Valid Reasons for Chargebacks</h3>
+          <p>
+            Chargebacks are appropriate for:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Unauthorized charges you didn't make</li>
+            <li>Duplicate charges for the same purchase</li>
+            <li>You were charged but never received access to content</li>
+            <li>We refused a valid refund request without justification</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">9.3 Chargeback Consequences</h3>
+          <p>
+            If you file a chargeback:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Your account access will be suspended pending resolution</li>
+            <li>You'll lose access to all courses and content</li>
+            <li>If chargeback is resolved in our favor, you may owe the original amount plus fees</li>
+            <li>Multiple fraudulent chargebacks will result in permanent account termination</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">9.4 Dispute Resolution</h3>
+          <p>
+            If you disagree with our refund decision:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Request a detailed explanation from our support team</li>
+            <li>Escalate to a supervisor or manager if needed</li>
+            <li>Provide additional information or documentation</li>
+            <li>We'll review every dispute fairly and thoroughly</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 10 -->
+      <section id="changes-to-policy" class="mb-2xl scroll-mt-lg">
+        <h2 class="mb-lg text-2xl font-bold text-text">10. Changes to This Policy</h2>
+        <div class="space-y-md text-text-light leading-relaxed">
+          <h3 class="text-xl font-semibold text-text">10.1 Policy Updates</h3>
+          <p>
+            We may update this Refund Policy from time to time to reflect:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>Changes to our products or services</li>
+            <li>Legal or regulatory requirements</li>
+            <li>Customer feedback and industry best practices</li>
+            <li>Operational improvements</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">10.2 Notification of Changes</h3>
+          <p>
+            When we make changes:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>We'll update the "Last Updated" date at the top of this page</li>
+            <li>For material changes, we'll send email notifications</li>
+            <li>You'll see a notification in your account dashboard</li>
+            <li>Continued use of our services constitutes acceptance of changes</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-text">10.3 Previous Policy Terms</h3>
+          <p>
+            For purchases made under previous policy versions:
+          </p>
+          <ul class="list-disc ml-lg space-y-xs">
+            <li>The policy in effect at time of purchase generally applies</li>
+            <li>You can request a copy of the policy version from your purchase date</li>
+            <li>Contact support if you have questions about which terms apply</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 11 -->
+      <section id="contact" class="mb-2xl scroll-mt-lg">
+        <h2 class="mb-lg text-2xl font-bold text-text">11. Contact Information</h2>
+        <div class="space-y-md text-text-light leading-relaxed">
+          <p>
+            If you have questions about our Refund Policy or need to request a refund, please contact us:
+          </p>
+
+          <div class="rounded-lg bg-background p-lg">
+            <h3 class="text-xl font-semibold text-text mb-md">Refund Requests</h3>
+            <ul class="list-none space-y-sm">
+              <li><strong class="text-text">Email:</strong> <a href="mailto:refunds@spiritualityplatform.com" class="text-primary hover:underline">refunds@spiritualityplatform.com</a></li>
+              <li><strong class="text-text">Online:</strong> <a href="/account/refunds" class="text-primary hover:underline">Account Dashboard → Refund Requests</a></li>
+              <li><strong class="text-text">Response Time:</strong> 2-3 business days</li>
+            </ul>
+          </div>
+
+          <div class="rounded-lg bg-background p-lg">
+            <h3 class="text-xl font-semibold text-text mb-md">General Support</h3>
+            <ul class="list-none space-y-sm">
+              <li><strong class="text-text">Email:</strong> <a href="mailto:support@spiritualityplatform.com" class="text-primary hover:underline">support@spiritualityplatform.com</a></li>
+              <li><strong class="text-text">Help Center:</strong> <a href="/help" class="text-primary hover:underline">spiritualityplatform.com/help</a></li>
+              <li><strong class="text-text">Hours:</strong> Monday-Friday, 9 AM - 6 PM EST</li>
+            </ul>
+          </div>
+
+          <p class="mt-md">
+            We're committed to providing excellent customer service and fair refund policies. Thank you for choosing Spirituality Platform!
+          </p>
+        </div>
+      </section>
+
+      <!-- Related Pages -->
+      <section class="mb-2xl">
+        <div class="rounded-xl bg-surface p-lg">
+          <h3 class="text-xl font-semibold text-text mb-md">Related Policies</h3>
+          <ul class="space-y-sm text-text-light">
+            <li>
+              <a href="/cancellation-policy" class="text-primary hover:underline font-medium">
+                Cancellation Policy
+              </a>
+              <span> - Learn about cancellation procedures for courses and events</span>
+            </li>
+            <li>
+              <a href="/terms-of-service" class="text-primary hover:underline font-medium">
+                Terms of Service
+              </a>
+              <span> - Review our terms and conditions</span>
+            </li>
+            <li>
+              <a href="/privacy-policy" class="text-primary hover:underline font-medium">
+                Privacy Policy
+              </a>
+              <span> - Understand how we protect your data</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+    </article>
+  </div>
+</BaseLayout>
+
+<style>
+  html {
+    scroll-behavior: smooth;
+  }
+</style>

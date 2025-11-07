@@ -1,0 +1,831 @@
+---
+/**
+ * PodcastPlayer Component (T127)
+ *
+ * Responsive podcast/audio player with custom controls and accessibility.
+ * Built with HTML5 Audio API and Tailwind CSS.
+ *
+ * Features:
+ * - HTML5 audio element with custom UI
+ * - Play/pause, volume control, speed control (0.5x - 2x)
+ * - Progress bar with scrubbing support
+ * - Keyboard shortcuts (Space, Arrow keys, M)
+ * - Progress tracking (saves current time)
+ * - Skip forward/backward (15 seconds)
+ * - Accessible with ARIA labels and keyboard navigation
+ * - Responsive design with Tailwind CSS
+ * - Loading and error states
+ * - Download option
+ *
+ * @param audioUrl - URL to the podcast audio file (required)
+ * @param title - Podcast title for accessibility (required)
+ * @param podcastId - Podcast ID for progress tracking (optional)
+ * @param duration - Total duration in seconds (optional, auto-detected)
+ * @param poster - Podcast cover image URL (optional)
+ * @param autoplay - Start playing automatically (default: false)
+ * @param showDownload - Show download button (default: true)
+ * @param onProgress - Callback for progress updates (optional)
+ * @param className - Additional CSS classes (optional)
+ */
+
+import { formatDuration } from '@/lib/podcast';
+
+interface Props {
+  audioUrl: string;
+  title: string;
+  podcastId?: string;
+  duration?: number;
+  poster?: string;
+  autoplay?: boolean;
+  showDownload?: boolean;
+  onProgress?: (progress: number) => void;
+  className?: string;
+}
+
+const {
+  audioUrl,
+  title,
+  podcastId,
+  duration,
+  poster,
+  autoplay = false,
+  showDownload = true,
+  className = '',
+} = Astro.props;
+
+// Generate unique player ID
+const playerId = `podcast-player-${podcastId || Math.random().toString(36).substr(2, 9)}`;
+const audioId = `audio-${playerId}`;
+---
+
+<div
+  id={playerId}
+  class:list={[
+    'podcast-player relative flex flex-col gap-md rounded-lg bg-white p-lg shadow-lg dark:bg-gray-800',
+    className
+  ]}
+  data-podcast-id={podcastId}
+  data-audio-url={audioUrl}
+  role="region"
+  aria-label={`Podcast player: ${title}`}
+>
+  <!-- Podcast Info -->
+  <div class="flex items-center gap-md">
+    {poster && (
+      <img
+        src={poster}
+        alt={`${title} cover`}
+        class="h-16 w-16 flex-shrink-0 rounded-md object-cover"
+      />
+    )}
+    <div class="flex-1 min-w-0">
+      <h3 class="truncate text-lg font-semibold text-gray-900 dark:text-white">
+        {title}
+      </h3>
+      <p class="text-sm text-gray-600 dark:text-gray-400 current-time-display">
+        00:00 / {duration ? formatDuration(duration) : '00:00'}
+      </p>
+    </div>
+    {showDownload && (
+      <a
+        href={audioUrl}
+        download
+        class="flex-shrink-0 rounded-md bg-gray-100 p-sm text-gray-700 transition-colors hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+        aria-label="Download podcast"
+        title="Download"
+      >
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+      </a>
+    )}
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="relative">
+    <input
+      type="range"
+      min="0"
+      max="100"
+      value="0"
+      class="progress-slider w-full cursor-pointer"
+      aria-label="Seek audio position"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="0"
+      aria-valuetext="0% complete"
+    />
+    <div class="progress-bar absolute left-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-primary transition-all pointer-events-none" style="width: 0%"></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="flex items-center justify-between gap-sm">
+    <!-- Left Controls -->
+    <div class="flex items-center gap-sm">
+      <!-- Skip Backward -->
+      <button
+        type="button"
+        class="skip-backward flex items-center justify-center rounded-full p-sm text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary dark:text-gray-300 dark:hover:bg-gray-700"
+        aria-label="Skip backward 15 seconds"
+        title="Skip backward 15s (Left Arrow)"
+      >
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.333 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z" />
+        </svg>
+      </button>
+
+      <!-- Play/Pause -->
+      <button
+        type="button"
+        class="play-pause-btn flex items-center justify-center rounded-full bg-primary p-md text-white transition-all hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+        aria-label="Play"
+        title="Play/Pause (Space)"
+      >
+        <!-- Play Icon -->
+        <svg class="play-icon h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+        <!-- Pause Icon (hidden by default) -->
+        <svg class="pause-icon hidden h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+        </svg>
+      </button>
+
+      <!-- Skip Forward -->
+      <button
+        type="button"
+        class="skip-forward flex items-center justify-center rounded-full p-sm text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary dark:text-gray-300 dark:hover:bg-gray-700"
+        aria-label="Skip forward 15 seconds"
+        title="Skip forward 15s (Right Arrow)"
+      >
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.933 12.8a1 1 0 000-1.6L6.6 7.2A1 1 0 005 8v8a1 1 0 001.6.8l5.333-4zM19.933 12.8a1 1 0 000-1.6l-5.333-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.333-4z" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center gap-sm">
+      <!-- Playback Speed -->
+      <div class="relative speed-control-container">
+        <button
+          type="button"
+          class="speed-button flex items-center gap-xs rounded-md px-sm py-xs text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary dark:text-gray-300 dark:hover:bg-gray-700"
+          aria-label="Playback speed"
+          aria-haspopup="menu"
+          aria-expanded="false"
+        >
+          <span class="speed-label">1x</span>
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <div class="speed-menu absolute bottom-full right-0 mb-xs hidden w-24 rounded-md bg-white py-xs shadow-lg dark:bg-gray-800" role="menu">
+          <button type="button" class="speed-option w-full px-md py-xs text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" data-speed="0.5" role="menuitem">0.5x</button>
+          <button type="button" class="speed-option w-full px-md py-xs text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" data-speed="0.75" role="menuitem">0.75x</button>
+          <button type="button" class="speed-option w-full px-md py-xs text-left text-sm font-semibold text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700" data-speed="1" role="menuitem">1x</button>
+          <button type="button" class="speed-option w-full px-md py-xs text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" data-speed="1.25" role="menuitem">1.25x</button>
+          <button type="button" class="speed-option w-full px-md py-xs text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" data-speed="1.5" role="menuitem">1.5x</button>
+          <button type="button" class="speed-option w-full px-md py-xs text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" data-speed="2" role="menuitem">2x</button>
+        </div>
+      </div>
+
+      <!-- Volume Control -->
+      <div class="volume-control flex items-center gap-xs">
+        <button
+          type="button"
+          class="volume-button flex items-center justify-center rounded-full p-xs text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary dark:text-gray-300 dark:hover:bg-gray-700"
+          aria-label="Mute/Unmute"
+          title="Mute (M)"
+        >
+          <!-- Volume Up Icon -->
+          <svg class="volume-up-icon h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+          </svg>
+          <!-- Volume Muted Icon (hidden by default) -->
+          <svg class="volume-muted-icon hidden h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+          </svg>
+        </button>
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value="100"
+          class="volume-slider h-1 w-20 cursor-pointer appearance-none rounded-full bg-gray-200 dark:bg-gray-600"
+          aria-label="Volume"
+          title="Volume (Up/Down Arrows)"
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading/Error State -->
+  <div class="loading-state hidden">
+    <div class="flex items-center justify-center gap-sm text-sm text-gray-600 dark:text-gray-400">
+      <div class="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+      <span>Loading audio...</span>
+    </div>
+  </div>
+
+  <div class="error-state hidden" role="alert">
+    <div class="rounded-md bg-error/10 p-sm text-sm text-error">
+      <span class="error-message">Failed to load audio. Please try again.</span>
+    </div>
+  </div>
+
+  <!-- HTML5 Audio Element (hidden) -->
+  <audio
+    id={audioId}
+    src={audioUrl}
+    preload="metadata"
+    class="hidden"
+    aria-hidden="true"
+  >
+    Your browser does not support the audio element.
+  </audio>
+
+  <!-- Screen Reader Announcements -->
+  <div
+    class="sr-only"
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
+  ></div>
+</div>
+
+<!-- Keyboard Shortcuts Help (Screen Reader) -->
+<div class="sr-only">
+  <p>Podcast player keyboard shortcuts:</p>
+  <ul>
+    <li>Space: Play/Pause</li>
+    <li>M: Toggle mute</li>
+    <li>Left Arrow: Skip backward 15 seconds</li>
+    <li>Right Arrow: Skip forward 15 seconds</li>
+    <li>Up Arrow: Increase volume</li>
+    <li>Down Arrow: Decrease volume</li>
+  </ul>
+</div>
+
+<script>
+/**
+ * PodcastPlayer Client-Side Logic
+ */
+
+interface PodcastPlayerState {
+  isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+  volume: number;
+  isMuted: boolean;
+  playbackRate: number;
+  lastProgressSave: number;
+}
+
+class PodcastPlayer {
+  private container: HTMLElement;
+  private audio: HTMLAudioElement;
+  private playPauseBtn: HTMLButtonElement;
+  private playIcon: SVGElement;
+  private pauseIcon: SVGElement;
+  private skipBackwardBtn: HTMLButtonElement;
+  private skipForwardBtn: HTMLButtonElement;
+  private progressSlider: HTMLInputElement;
+  private progressBar: HTMLElement;
+  private volumeButton: HTMLButtonElement;
+  private volumeUpIcon: SVGElement;
+  private volumeMutedIcon: SVGElement;
+  private volumeSlider: HTMLInputElement;
+  private speedButton: HTMLButtonElement;
+  private speedMenu: HTMLElement;
+  private speedLabel: HTMLElement;
+  private currentTimeDisplay: HTMLElement;
+  private announcementEl: HTMLElement;
+  private loadingState: HTMLElement;
+  private errorState: HTMLElement;
+  private podcastId: string | null;
+  private state: PodcastPlayerState;
+  private progressSaveInterval: number | null = null;
+
+  constructor(containerId: string) {
+    const container = document.getElementById(containerId);
+    if (!container) {
+      console.error(`PodcastPlayer: Container ${containerId} not found`);
+      return;
+    }
+
+    this.container = container;
+    this.audio = this.container.querySelector('audio') as HTMLAudioElement;
+    this.playPauseBtn = this.container.querySelector('.play-pause-btn') as HTMLButtonElement;
+    this.playIcon = this.container.querySelector('.play-icon') as SVGElement;
+    this.pauseIcon = this.container.querySelector('.pause-icon') as SVGElement;
+    this.skipBackwardBtn = this.container.querySelector('.skip-backward') as HTMLButtonElement;
+    this.skipForwardBtn = this.container.querySelector('.skip-forward') as HTMLButtonElement;
+    this.progressSlider = this.container.querySelector('.progress-slider') as HTMLInputElement;
+    this.progressBar = this.container.querySelector('.progress-bar') as HTMLElement;
+    this.volumeButton = this.container.querySelector('.volume-button') as HTMLButtonElement;
+    this.volumeUpIcon = this.container.querySelector('.volume-up-icon') as SVGElement;
+    this.volumeMutedIcon = this.container.querySelector('.volume-muted-icon') as SVGElement;
+    this.volumeSlider = this.container.querySelector('.volume-slider') as HTMLInputElement;
+    this.speedButton = this.container.querySelector('.speed-button') as HTMLButtonElement;
+    this.speedMenu = this.container.querySelector('.speed-menu') as HTMLElement;
+    this.speedLabel = this.container.querySelector('.speed-label') as HTMLElement;
+    this.currentTimeDisplay = this.container.querySelector('.current-time-display') as HTMLElement;
+    this.announcementEl = this.container.querySelector('[role="status"]') as HTMLElement;
+    this.loadingState = this.container.querySelector('.loading-state') as HTMLElement;
+    this.errorState = this.container.querySelector('.error-state') as HTMLElement;
+
+    this.podcastId = this.container.dataset.podcastId || null;
+
+    this.state = {
+      isPlaying: false,
+      currentTime: 0,
+      duration: 0,
+      volume: 1,
+      isMuted: false,
+      playbackRate: 1,
+      lastProgressSave: 0,
+    };
+
+    this.init();
+  }
+
+  private init(): void {
+    // Load saved progress
+    if (this.podcastId) {
+      this.loadProgress();
+    }
+
+    // Setup event listeners
+    this.setupAudioEvents();
+    this.setupControlEvents();
+    this.setupKeyboardShortcuts();
+
+    // Setup progress save interval (every 10 seconds)
+    if (this.podcastId) {
+      this.progressSaveInterval = window.setInterval(() => {
+        if (this.state.isPlaying) {
+          this.saveProgress();
+        }
+      }, 10000);
+    }
+  }
+
+  private setupAudioEvents(): void {
+    // Metadata loaded
+    this.audio.addEventListener('loadedmetadata', () => {
+      this.state.duration = this.audio.duration;
+      this.progressSlider.max = String(this.audio.duration);
+      this.updateTimeDisplay();
+      this.hideLoading();
+    });
+
+    // Time update
+    this.audio.addEventListener('timeupdate', () => {
+      this.state.currentTime = this.audio.currentTime;
+      this.updateProgress();
+      this.updateTimeDisplay();
+    });
+
+    // Play
+    this.audio.addEventListener('play', () => {
+      this.state.isPlaying = true;
+      this.updatePlayPauseButton();
+      this.announce('Playing');
+    });
+
+    // Pause
+    this.audio.addEventListener('pause', () => {
+      this.state.isPlaying = false;
+      this.updatePlayPauseButton();
+      this.announce('Paused');
+    });
+
+    // Ended
+    this.audio.addEventListener('ended', () => {
+      this.state.isPlaying = false;
+      this.updatePlayPauseButton();
+      this.saveProgress();
+      this.announce('Podcast ended');
+    });
+
+    // Error
+    this.audio.addEventListener('error', () => {
+      this.showError('Failed to load audio. Please check the file URL.');
+    });
+
+    // Loading
+    this.audio.addEventListener('loadstart', () => {
+      this.showLoading();
+    });
+
+    // Can play
+    this.audio.addEventListener('canplay', () => {
+      this.hideLoading();
+    });
+
+    // Volume change
+    this.audio.addEventListener('volumechange', () => {
+      this.state.volume = this.audio.volume;
+      this.state.isMuted = this.audio.muted;
+      this.updateVolumeButton();
+    });
+
+    // Rate change
+    this.audio.addEventListener('ratechange', () => {
+      this.state.playbackRate = this.audio.playbackRate;
+    });
+  }
+
+  private setupControlEvents(): void {
+    // Play/Pause
+    this.playPauseBtn.addEventListener('click', () => {
+      this.togglePlayPause();
+    });
+
+    // Skip backward
+    this.skipBackwardBtn.addEventListener('click', () => {
+      this.skip(-15);
+    });
+
+    // Skip forward
+    this.skipForwardBtn.addEventListener('click', () => {
+      this.skip(15);
+    });
+
+    // Progress slider
+    this.progressSlider.addEventListener('input', () => {
+      const time = parseFloat(this.progressSlider.value);
+      this.audio.currentTime = time;
+      this.state.currentTime = time;
+      this.updateProgress();
+      this.updateTimeDisplay();
+    });
+
+    // Volume button
+    this.volumeButton.addEventListener('click', () => {
+      this.toggleMute();
+    });
+
+    // Volume slider
+    this.volumeSlider.addEventListener('input', () => {
+      const volume = parseInt(this.volumeSlider.value) / 100;
+      this.audio.volume = volume;
+      this.state.volume = volume;
+      if (this.audio.muted) {
+        this.audio.muted = false;
+        this.state.isMuted = false;
+      }
+    });
+
+    // Speed button
+    this.speedButton.addEventListener('click', () => {
+      this.speedMenu.classList.toggle('hidden');
+      const isExpanded = !this.speedMenu.classList.contains('hidden');
+      this.speedButton.setAttribute('aria-expanded', String(isExpanded));
+    });
+
+    // Speed options
+    const speedOptions = this.container.querySelectorAll('.speed-option');
+    speedOptions.forEach((option) => {
+      option.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        const speed = parseFloat(target.dataset.speed || '1');
+        this.setPlaybackSpeed(speed);
+        this.speedMenu.classList.add('hidden');
+        this.speedButton.setAttribute('aria-expanded', 'false');
+      });
+    });
+
+    // Close speed menu on outside click
+    document.addEventListener('click', (e) => {
+      if (!this.container.contains(e.target as Node)) {
+        this.speedMenu.classList.add('hidden');
+        this.speedButton.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+
+  private setupKeyboardShortcuts(): void {
+    let isPlayerFocused = false;
+
+    this.container.addEventListener('mouseenter', () => {
+      isPlayerFocused = true;
+    });
+
+    this.container.addEventListener('mouseleave', () => {
+      isPlayerFocused = false;
+    });
+
+    this.container.addEventListener('focusin', () => {
+      isPlayerFocused = true;
+    });
+
+    this.container.addEventListener('focusout', () => {
+      isPlayerFocused = false;
+    });
+
+    document.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (!isPlayerFocused) return;
+
+      const handledKeys = [' ', 'm', 'M', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+      if (handledKeys.includes(e.key)) {
+        e.preventDefault();
+      }
+
+      switch (e.key) {
+        case ' ':
+          this.togglePlayPause();
+          break;
+        case 'm':
+        case 'M':
+          this.toggleMute();
+          break;
+        case 'ArrowLeft':
+          this.skip(-15);
+          break;
+        case 'ArrowRight':
+          this.skip(15);
+          break;
+        case 'ArrowUp':
+          this.adjustVolume(0.1);
+          break;
+        case 'ArrowDown':
+          this.adjustVolume(-0.1);
+          break;
+      }
+    });
+  }
+
+  private togglePlayPause(): void {
+    if (this.state.isPlaying) {
+      this.audio.pause();
+    } else {
+      this.audio.play();
+    }
+  }
+
+  private updatePlayPauseButton(): void {
+    if (this.state.isPlaying) {
+      this.playIcon.classList.add('hidden');
+      this.pauseIcon.classList.remove('hidden');
+      this.playPauseBtn.setAttribute('aria-label', 'Pause');
+    } else {
+      this.playIcon.classList.remove('hidden');
+      this.pauseIcon.classList.add('hidden');
+      this.playPauseBtn.setAttribute('aria-label', 'Play');
+    }
+  }
+
+  private skip(seconds: number): void {
+    const newTime = Math.max(0, Math.min(this.state.duration, this.audio.currentTime + seconds));
+    this.audio.currentTime = newTime;
+    this.announce(`Skipped ${seconds > 0 ? 'forward' : 'backward'} ${Math.abs(seconds)} seconds`);
+  }
+
+  private updateProgress(): void {
+    const progress = this.state.duration > 0 ? (this.state.currentTime / this.state.duration) * 100 : 0;
+    this.progressSlider.value = String(this.state.currentTime);
+    this.progressBar.style.width = `${progress}%`;
+    this.progressSlider.setAttribute('aria-valuenow', String(Math.round(progress)));
+    this.progressSlider.setAttribute('aria-valuetext', `${Math.round(progress)}% complete`);
+  }
+
+  private updateTimeDisplay(): void {
+    const current = this.formatTime(this.state.currentTime);
+    const total = this.formatTime(this.state.duration);
+    this.currentTimeDisplay.textContent = `${current} / ${total}`;
+  }
+
+  private formatTime(seconds: number): string {
+    if (!seconds || seconds < 0) return '00:00';
+
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+
+    const pad = (num: number) => num.toString().padStart(2, '0');
+
+    if (hours > 0) {
+      return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
+    }
+
+    return `${pad(minutes)}:${pad(secs)}`;
+  }
+
+  private toggleMute(): void {
+    this.audio.muted = !this.audio.muted;
+    this.state.isMuted = this.audio.muted;
+    this.announce(this.state.isMuted ? 'Muted' : 'Unmuted');
+  }
+
+  private updateVolumeButton(): void {
+    if (this.state.isMuted || this.state.volume === 0) {
+      this.volumeUpIcon.classList.add('hidden');
+      this.volumeMutedIcon.classList.remove('hidden');
+    } else {
+      this.volumeUpIcon.classList.remove('hidden');
+      this.volumeMutedIcon.classList.add('hidden');
+    }
+  }
+
+  private adjustVolume(delta: number): void {
+    const newVolume = Math.max(0, Math.min(1, this.audio.volume + delta));
+    this.audio.volume = newVolume;
+    this.volumeSlider.value = String(Math.round(newVolume * 100));
+    if (this.audio.muted) {
+      this.audio.muted = false;
+    }
+    this.announce(`Volume ${Math.round(newVolume * 100)}%`);
+  }
+
+  private setPlaybackSpeed(speed: number): void {
+    this.audio.playbackRate = speed;
+    this.state.playbackRate = speed;
+    this.speedLabel.textContent = `${speed}x`;
+    this.announce(`Playback speed ${speed}x`);
+  }
+
+  private showLoading(): void {
+    this.loadingState.classList.remove('hidden');
+  }
+
+  private hideLoading(): void {
+    this.loadingState.classList.add('hidden');
+  }
+
+  private showError(message: string): void {
+    this.hideLoading();
+    this.errorState.classList.remove('hidden');
+    const errorMessage = this.errorState.querySelector('.error-message');
+    if (errorMessage) {
+      errorMessage.textContent = message;
+    }
+    this.announce(`Error: ${message}`);
+  }
+
+  private announce(message: string): void {
+    if (this.announcementEl) {
+      this.announcementEl.textContent = message;
+      setTimeout(() => {
+        this.announcementEl.textContent = '';
+      }, 1000);
+    }
+  }
+
+  private loadProgress(): void {
+    if (!this.podcastId) return;
+
+    const saved = localStorage.getItem(`podcast-progress-${this.podcastId}`);
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        if (data.currentTime && data.currentTime < this.audio.duration) {
+          this.audio.currentTime = data.currentTime;
+          this.state.currentTime = data.currentTime;
+        }
+      } catch (error) {
+        console.error('Failed to load progress:', error);
+      }
+    }
+  }
+
+  private saveProgress(): void {
+    if (!this.podcastId) return;
+
+    // Only save if at least 5 seconds have passed since last save
+    if (Math.abs(this.state.currentTime - this.state.lastProgressSave) < 5) {
+      return;
+    }
+
+    try {
+      const data = {
+        currentTime: this.state.currentTime,
+        duration: this.state.duration,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem(`podcast-progress-${this.podcastId}`, JSON.stringify(data));
+      this.state.lastProgressSave = this.state.currentTime;
+    } catch (error) {
+      console.error('Failed to save progress:', error);
+    }
+  }
+
+  public destroy(): void {
+    if (this.progressSaveInterval) {
+      clearInterval(this.progressSaveInterval);
+    }
+    this.saveProgress();
+  }
+}
+
+// Initialize all podcast players on the page
+document.addEventListener('DOMContentLoaded', () => {
+  const players = document.querySelectorAll('[id^="podcast-player-"]');
+  players.forEach((container) => {
+    if (container.id) {
+      new PodcastPlayer(container.id);
+    }
+  });
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+  // Save progress before leaving
+  const players = document.querySelectorAll('[id^="podcast-player-"]');
+  players.forEach((container) => {
+    const podcastId = (container as HTMLElement).dataset.podcastId;
+    if (podcastId) {
+      const audio = container.querySelector('audio') as HTMLAudioElement;
+      if (audio) {
+        const data = {
+          currentTime: audio.currentTime,
+          duration: audio.duration,
+          timestamp: Date.now(),
+        };
+        localStorage.setItem(`podcast-progress-${podcastId}`, JSON.stringify(data));
+      }
+    }
+  });
+});
+</script>
+
+<style>
+  /* Progress slider styling */
+  .progress-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    background: transparent;
+    border-radius: 9999px;
+    position: relative;
+    z-index: 10;
+  }
+
+  .progress-slider::-webkit-slider-track {
+    background: rgb(229 231 235);
+    border-radius: 9999px;
+    height: 6px;
+  }
+
+  .progress-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--color-primary, #4f46e5);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .progress-slider:hover::-webkit-slider-thumb {
+    transform: scale(1.2);
+  }
+
+  .progress-slider:focus::-webkit-slider-thumb {
+    outline: 2px solid var(--color-primary, #4f46e5);
+    outline-offset: 2px;
+  }
+
+  /* Volume slider styling */
+  .volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--color-primary, #4f46e5);
+    cursor: pointer;
+  }
+
+  .volume-slider::-webkit-slider-track {
+    height: 4px;
+  }
+
+  /* Dark mode support */
+  .dark .progress-slider::-webkit-slider-track {
+    background: rgb(75 85 99);
+  }
+
+  /* Screen reader only */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+</style>

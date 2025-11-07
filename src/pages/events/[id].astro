@@ -8,6 +8,8 @@
  */
 
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import StructuredData from '@/components/StructuredData.astro';
+import { generateEventSchema } from '@/lib/structuredData';
 import { getEventById } from '@/lib/events';
 import { getLocalizedEventBySlug } from '@/lib/eventsI18n';
 import { NotFoundError } from '@/lib/errors';
@@ -99,19 +101,78 @@ const googleMapsUrl = hasCoordinates
 
 // SEO metadata
 const title = event.title;
-const description = event.description.length > 160 
-  ? event.description.substring(0, 157) + '...' 
+const description = event.description.length > 160
+  ? event.description.substring(0, 157) + '...'
   : event.description;
 const keywords = `event, ${event.venue_city}, ${event.venue_country}, spiritual event, ${event.title}`;
 const ogImage = event.image_url || '/images/event-placeholder.jpg';
+
+// Generate Event structured data for SEO (T226)
+const siteUrl = Astro.site?.origin || Astro.url.origin;
+const eventUrl = `${siteUrl}/events/${event.slug}`;
+const eventImageUrl = event.image_url?.startsWith('http')
+  ? event.image_url
+  : event.image_url ? `${siteUrl}${event.image_url}` : `${siteUrl}/images/event-placeholder.jpg`;
+
+// Determine event status
+const eventStatus = isSoldOut ? 'EventSoldOut' : 'EventScheduled';
+
+// Determine attendance mode (default to offline/in-person)
+const eventAttendanceMode = 'OfflineEventAttendanceMode';
+
+const eventSchema = generateEventSchema({
+  name: event.title,
+  description: event.description,
+  startDate: formatDateTime(event.event_date),
+  endDate: formatDateTime(endTime),
+  url: eventUrl,
+  image: eventImageUrl,
+  location: {
+    '@type': 'Place',
+    name: event.venue_name,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: event.venue_address,
+      addressLocality: event.venue_city,
+      addressCountry: event.venue_country,
+    },
+    ...(hasCoordinates && {
+      geo: {
+        '@type': 'GeoCoordinates',
+        latitude: mapCenter!.lat,
+        longitude: mapCenter!.lng,
+      }
+    })
+  },
+  organizer: {
+    '@type': 'Organization',
+    name: 'Spirituality Platform',
+    url: siteUrl,
+  },
+  offers: {
+    '@type': 'Offer',
+    price: typeof event.price === 'string' ? parseFloat(event.price) : event.price,
+    priceCurrency: 'USD',
+    availability: isSoldOut
+      ? 'https://schema.org/SoldOut'
+      : 'https://schema.org/InStock',
+    url: eventUrl,
+    validFrom: new Date().toISOString(),
+  },
+  eventStatus: eventStatus,
+  eventAttendanceMode: eventAttendanceMode,
+});
 ---
 
-<BaseLayout 
+<BaseLayout
   title={title}
   description={description}
   keywords={keywords}
   ogImage={ogImage}
 >
+  <!-- Event Structured Data (T226) -->
+  <StructuredData schema={eventSchema} slot="head" />
+
   <div class="container mx-auto px-lg py-2xl">
     <!-- Breadcrumb -->
     <nav class="mb-lg text-sm" aria-label="Breadcrumb">
@@ -395,50 +456,6 @@ const ogImage = event.image_url || '/images/event-placeholder.jpg';
       </a>
     </div>
   </div>
-
-  <!-- Schema.org structured data for SEO -->
-  <script type="application/ld+json" set:html={JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "Event",
-    "name": event.title,
-    "description": event.description,
-    "startDate": formatDateTime(event.event_date),
-    "endDate": formatDateTime(endTime),
-    "eventStatus": "https://schema.org/EventScheduled",
-    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
-    "location": {
-      "@type": "Place",
-      "name": event.venue_name,
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": event.venue_address,
-        "addressLocality": event.venue_city,
-        "addressCountry": event.venue_country
-      },
-      ...(hasCoordinates && {
-        "geo": {
-          "@type": "GeoCoordinates",
-          "latitude": mapCenter!.lat,
-          "longitude": mapCenter!.lng
-        }
-      })
-    },
-    "image": event.image_url || '/images/event-placeholder.jpg',
-    "organizer": {
-      "@type": "Organization",
-      "name": "Spirituality Platform"
-    },
-    "offers": {
-      "@type": "Offer",
-      "price": typeof event.price === 'string' ? parseFloat(event.price) : event.price,
-      "priceCurrency": "USD",
-      "availability": isSoldOut 
-        ? "https://schema.org/SoldOut" 
-        : "https://schema.org/InStock",
-      "url": `${Astro.site}/events/${event.slug}`,
-      "validFrom": new Date().toISOString()
-    }
-  })} />
 
   <!-- Book Now Button JavaScript (T082) -->
   <script>

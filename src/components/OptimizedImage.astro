@@ -1,6 +1,6 @@
 ---
 /**
- * OptimizedImage Component
+ * OptimizedImage Component (T142 + T234)
  *
  * A component for optimized image delivery with:
  * - Lazy loading
@@ -8,8 +8,10 @@
  * - WebP format with fallbacks
  * - Layout shift prevention
  * - Blur-up placeholder (optional)
+ * - SEO validation and warnings (T234)
  *
  * Part of T142: Optimize image loading
+ * Enhanced in T234: Image SEO validation
  *
  * @example Basic usage
  * <OptimizedImage
@@ -33,6 +35,13 @@
  *   aspectRatio="4/3"
  *   loading="eager"
  * />
+ *
+ * @example Decorative image
+ * <OptimizedImage
+ *   src="/images/decoration.jpg"
+ *   alt=""
+ *   isDecorative={true}
+ * />
  */
 
 import {
@@ -43,6 +52,8 @@ import {
   shouldLazyLoad,
   type ImageOptimizationOptions
 } from '@/lib/imageOptimization';
+
+import { analyzeImageSEO } from '@/lib/imageSEO';
 
 interface Props extends Partial<ImageOptimizationOptions> {
   /**
@@ -94,6 +105,12 @@ interface Props extends Partial<ImageOptimizationOptions> {
    * Object position CSS property
    */
   objectPosition?: string;
+
+  /**
+   * Whether this is a decorative image (T234)
+   * Decorative images should have empty alt text
+   */
+  isDecorative?: boolean;
 }
 
 const {
@@ -107,6 +124,7 @@ const {
   height,
   objectFit = 'cover',
   objectPosition = 'center',
+  isDecorative = false,
   ...options
 } = Astro.props;
 
@@ -115,6 +133,25 @@ if (!isValidImageUrl(src)) {
   console.warn(`[OptimizedImage] Invalid image URL: ${src}`);
   // Render nothing for invalid URLs
   return null;
+}
+
+// T234: SEO validation and warnings (development only)
+if (import.meta.env.DEV) {
+  const seoAnalysis = analyzeImageSEO(src, alt, isDecorative);
+
+  if (!seoAnalysis.meetsBestPractices) {
+    console.warn(`[OptimizedImage SEO] Image SEO score: ${seoAnalysis.score}/100 for "${src}"`);
+
+    if (seoAnalysis.allIssues.length > 0) {
+      console.warn(`[OptimizedImage SEO] Issues:`);
+      seoAnalysis.allIssues.forEach(issue => console.warn(`  - ${issue}`));
+    }
+
+    if (seoAnalysis.allSuggestions.length > 0) {
+      console.warn(`[OptimizedImage SEO] Suggestions:`);
+      seoAnalysis.allSuggestions.forEach(suggestion => console.warn(`  - ${suggestion}`));
+    }
+  }
 }
 
 // Apply preset if provided

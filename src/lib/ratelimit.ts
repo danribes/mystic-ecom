@@ -150,6 +150,28 @@ export const RateLimitProfiles = {
     keyPrefix: 'rl:cart',
     useUserId: true, // Track by session
   } as RateLimitConfig,
+
+  /**
+   * GDPR Data Export (T148)
+   * 5 requests per hour per user - prevents abuse of data export
+   */
+  DATA_EXPORT: {
+    maxRequests: 5,
+    windowSeconds: 3600, // 1 hour
+    keyPrefix: 'rl:gdpr:export',
+    useUserId: true,
+  } as RateLimitConfig,
+
+  /**
+   * GDPR Account Deletion (T148)
+   * 3 requests per day per user - prevents accidental deletion abuse
+   */
+  DATA_DELETION: {
+    maxRequests: 3,
+    windowSeconds: 86400, // 24 hours
+    keyPrefix: 'rl:gdpr:delete',
+    useUserId: true,
+  } as RateLimitConfig,
 };
 
 /**
@@ -382,5 +404,63 @@ export async function getRateLimitStatus(
   } catch (error) {
     console.error('[RateLimit] Error getting status:', error);
     return null;
+  }
+}
+
+/**
+ * Simple rate limiting function for legacy API compatibility
+ *
+ * @deprecated Use withRateLimit or checkRateLimit with APIContext instead
+ * @param request - The incoming request
+ * @param config - Rate limit configuration with windowMs
+ * @returns Promise with success and optional retryAfter
+ */
+export async function applyRateLimit(
+  request: Request,
+  config: { maxRequests: number; windowMs: number }
+): Promise<{ success: boolean; retryAfter?: number }> {
+  try {
+    // Extract client IP from request
+    const forwarded = request.headers.get('x-forwarded-for');
+    const clientIp = forwarded ? forwarded.split(',')[0].trim() : 'unknown';
+
+    const redis = await getRedisClient();
+    const keyPrefix = 'rl:legacy';
+    const key = `${keyPrefix}:${clientIp}`;
+    const now = Date.now();
+    const windowStart = now - config.windowMs;
+
+    // Remove old entries outside the window
+    await redis.zRemRangeByScore(key, 0, windowStart);
+
+    // Count requests in current window
+    const count = await redis.zCard(key);
+
+    // Check if limit exceeded
+    if (count >= config.maxRequests) {
+      // Get oldest entry to calculate retry time
+      const oldestEntry = await redis.zRange(key, 0, 0);
+      const retryAfter = oldestEntry.length > 0 && oldestEntry[0]
+        ? Math.ceil((parseInt(oldestEntry[0].split(':')[0]) + config.windowMs - now) / 1000)
+        : Math.ceil(config.windowMs / 1000);
+
+      return {
+        success: false,
+        retryAfter: Math.max(1, retryAfter),
+      };
+    }
+
+    // Add current request to the window
+    const requestId = `${now}:${Math.random()}`;
+    await redis.zAdd(key, { score: now, value: requestId });
+
+    // Set expiry on the key
+    await redis.expire(key, Math.ceil(config.windowMs / 1000) + 10);
+
+    return { success: true };
+  } catch (error) {
+    console.error('[RateLimit] Error in applyRateLimit:', error);
+    // On error, allow the request to proceed (fail open)
+    return { success: true };
   }
 }
