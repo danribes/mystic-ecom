@@ -42,7 +42,7 @@
 **Unstructured** (how humans read it):
 ```html
 <p>Mystic Ecommerce is a leading platform for spiritual growth.
-Contact us at contact@mystic-ecom.com or find us on Facebook.</p>
+Contact us at contact@mystic-ecom-cloud.com or find us on Facebook.</p>
 ```
 
 Search engines see: "Some text about a company"
@@ -53,7 +53,7 @@ Search engines see: "Some text about a company"
   "@type": "Organization",
   "name": "Mystic Ecommerce",
   "description": "A leading platform for spiritual growth",
-  "email": "contact@mystic-ecom.com",
+  "email": "contact@mystic-ecom-cloud.com",
   "sameAs": ["https://facebook.com/mysticecommerce"]
 }
 ```
@@ -98,7 +98,7 @@ Search engines see: "An Organization named 'Mystic Ecommerce' with these specifi
 │ ◯ Facebook  ◯ Twitter      │
 │ ◯ Instagram ◯ LinkedIn     │
 │                             │
-│ Website: mystic-ecom.com    │
+│ Website: mystic-ecom-cloud.com    │
 └─────────────────────────────┘
 ```
 
@@ -112,14 +112,14 @@ Search engines see: "An Organization named 'Mystic Ecommerce' with these specifi
 
 **Before** (without schema):
 ```
-mystic-ecom.pages.dev
+mystic-ecom-cloud.pages.dev
 Spiritual growth platform...
 ```
 
 **After** (with schema):
 ```
 [LOGO] Mystic Ecommerce
-mystic-ecom.pages.dev
+mystic-ecom-cloud.pages.dev
 Leading platform for spiritual growth, mindfulness, and wellness
 ☰ Facebook • Twitter • Instagram • LinkedIn
 ```
@@ -215,7 +215,7 @@ Google recommends including these for best results:
 
 #### 4. url
 ```json
-"url": "https://mystic-ecom.pages.dev"
+"url": "https://mystic-ecom-cloud.pages.dev"
 ```
 **Purpose**: Official website URL
 **Format**: Absolute URL (must include https://)
@@ -223,7 +223,7 @@ Google recommends including these for best results:
 
 #### 5. logo
 ```json
-"logo": "https://mystic-ecom.pages.dev/logo.png"
+"logo": "https://mystic-ecom-cloud.pages.dev/logo.png"
 ```
 **Purpose**: Organization logo image
 **Format**: Absolute URL to image file
@@ -266,7 +266,7 @@ Include these if applicable:
 
 #### 8. email
 ```json
-"email": "contact@mystic-ecom.com"
+"email": "contact@mystic-ecom-cloud.com"
 ```
 **Purpose**: Contact email address
 **Format**: Valid email address
@@ -379,9 +379,9 @@ Define your organization details in `siteConfig.ts`:
 ```typescript
 export const siteConfig = {
   name: 'Mystic Ecommerce',
-  url: 'https://mystic-ecom.pages.dev',
-  logo: 'https://mystic-ecom.pages.dev/logo.png',
-  email: 'contact@mystic-ecom.com',
+  url: 'https://mystic-ecom-cloud.pages.dev',
+  logo: 'https://mystic-ecom-cloud.pages.dev/logo.png',
+  email: 'contact@mystic-ecom-cloud.com',
   // ... more fields
   socialMedia: {
     facebook: 'https://facebook.com/mysticecommerce',
@@ -426,7 +426,7 @@ const schema = generateOrganizationSchema(orgData);
   "@context": "https://schema.org",
   "@type": "Organization",
   "name": "Mystic Ecommerce",
-  "url": "https://mystic-ecom.pages.dev",
+  "url": "https://mystic-ecom-cloud.pages.dev",
   // ... all other properties
 }
 ```
@@ -504,7 +504,7 @@ Your logo should:
 **Example**:
 ```
 ❌ Bad: /logo.png (relative URL)
-✅ Good: https://mystic-ecom.pages.dev/logo.png (absolute URL)
+✅ Good: https://mystic-ecom-cloud.pages.dev/logo.png (absolute URL)
 ```
 
 ### Advanced Configuration
@@ -634,8 +634,8 @@ The `sameAs` property tells Google which social profiles are official.
 
 Properties:
   name: "Mystic Ecommerce"
-  url: "https://mystic-ecom.pages.dev"
-  logo: "https://mystic-ecom.pages.dev/logo.png"
+  url: "https://mystic-ecom-cloud.pages.dev"
+  logo: "https://mystic-ecom-cloud.pages.dev/logo.png"
   sameAs: 5 URLs
 ```
 
@@ -706,7 +706,7 @@ Properties:
 **✅ Correct**:
 ```json
 {
-  "logo": "https://mystic-ecom.pages.dev/logo.png",
+  "logo": "https://mystic-ecom-cloud.pages.dev/logo.png",
   "sameAs": ["https://facebook.com/mysticecommerce"]
 }
 ```
@@ -785,7 +785,7 @@ Properties:
 
 **✅ Fix**:
 ```json
-"logo": "https://mystic-ecom.pages.dev/images/logo.png"
+"logo": "https://mystic-ecom-cloud.pages.dev/images/logo.png"
 ```
 
 ### 2. Multiple Organization Schemas
@@ -857,7 +857,7 @@ Logo URL returns 404 error
 
 **✅ Fix**:
 ```json
-"email": "contact@mystic-ecom.com"
+"email": "contact@mystic-ecom-cloud.com"
 ```
 
 ---
@@ -946,7 +946,7 @@ More detailed contact information:
     "@type": "ContactPoint",
     "telephone": "+1-555-0100",
     "contactType": "customer service",
-    "email": "support@mystic-ecom.com",
+    "email": "support@mystic-ecom-cloud.com",
     "availableLanguage": ["English", "Spanish"],
     "areaServed": "US"
   }
@@ -990,10 +990,10 @@ More detailed contact information:
   "@context": "https://schema.org",
   "@type": "OnlineBusiness",
   "name": "Mystic Ecommerce",
-  "url": "https://mystic-ecom.pages.dev",
-  "logo": "https://mystic-ecom.pages.dev/logo.png",
+  "url": "https://mystic-ecom-cloud.pages.dev",
+  "logo": "https://mystic-ecom-cloud.pages.dev/logo.png",
   "description": "Online store for spiritual products and wellness courses",
-  "email": "support@mystic-ecom.com",
+  "email": "support@mystic-ecom-cloud.com",
   "sameAs": [
     "https://facebook.com/mysticecommerce",
     "https://instagram.com/mysticecommerce"

@@ -173,7 +173,7 @@ This guide provides step-by-step instructions for deploying the Spirituality E-C
 
 2. **Create Project**
    ```bash
-   Project Name: mystic-ecom-production
+   Project Name: mystic-ecom-cloud-production
    Region: Choose closest to your users
    PostgreSQL Version: 16 (latest stable)
    ```
@@ -252,7 +252,7 @@ This guide provides step-by-step instructions for deploying the Spirituality E-C
 
 2. **Create Database**
    ```bash
-   Name: mystic-ecom-sessions
+   Name: mystic-ecom-cloud-sessions
    Type: Regional (or Global for multi-region)
    Region: us-east-1 (choose closest to database)
    Primary Region: Same as Neon database
@@ -316,7 +316,7 @@ This guide provides step-by-step instructions for deploying the Spirituality E-C
    # 3. Select "Pages" tab
    # 4. Click "Connect to Git"
    # 5. Authorize GitHub
-   # 6. Select repository: danribes/mystic-ecom
+   # 6. Select repository: danribes/mystic-ecom-cloud
    ```
 
 3. **Configure Build Settings**
@@ -333,7 +333,7 @@ This guide provides step-by-step instructions for deploying the Spirituality E-C
    ```bash
    # Click "Save and Deploy"
    # Wait 2-3 minutes for build
-   # Site live at: https://mystic-ecom.pages.dev
+   # Site live at: https://mystic-ecom-cloud.pages.dev
    ```
 
 ---
@@ -673,7 +673,7 @@ vercel --prod --env DATABASE_URL=postgresql://...
 ssh user@production-server
 
 # 2. Pull latest code
-cd /var/www/mystic-ecom
+cd /var/www/mystic-ecom-cloud
 git pull origin main
 
 # 3. Install dependencies
@@ -683,11 +683,11 @@ npm ci --production
 npm run build
 
 # 5. Restart application
-pm2 restart mystic-ecom
+pm2 restart mystic-ecom-cloud
 
 # 6. Verify
 pm2 status
-pm2 logs mystic-ecom --lines 100
+pm2 logs mystic-ecom-cloud --lines 100
 ```
 
 ### Step 4: Configure Stripe Webhooks
@@ -809,7 +809,7 @@ npm install @sentry/node @sentry/astro
 
 # 3. Create project
 # Platform: Node.js
-# Project name: mystic-ecom-production
+# Project name: mystic-ecom-cloud-production
 
 # 4. Get DSN
 # Format: https://xxxxxxxxxxxxxxxxxxxxxxxxxxxxx@sentry.io/1234567
@@ -962,7 +962,7 @@ pg_dump $DATABASE_URL | gzip > $BACKUP_DIR/backup_$DATE.sql.gz
 find $BACKUP_DIR -name "*.sql.gz" -mtime +30 -delete
 
 # Upload to S3 (optional)
-aws s3 cp $BACKUP_DIR/backup_$DATE.sql.gz s3://mystic-ecom-backups/
+aws s3 cp $BACKUP_DIR/backup_$DATE.sql.gz s3://mystic-ecom-cloud-backups/
 ```
 
 **Cron Schedule:**
@@ -1037,7 +1037,7 @@ git push origin v1.0.0
    # Deploy to backup platform (Vercel)
 
    # 1. Import project
-   vercel import github.com/danribes/mystic-ecom
+   vercel import github.com/danribes/mystic-ecom-cloud
 
    # 2. Configure environment variables
    vercel env add DATABASE_URL
@@ -1485,7 +1485,7 @@ On-Call Engineer: [phone]
 
 ## Rollback Plan
 If issues arise:
-1. Rollback to deployment: https://mystic-ecom.pages.dev/deployments/abc123
+1. Rollback to deployment: https://mystic-ecom-cloud.pages.dev/deployments/abc123
 2. Restore database from: backup_20250105_100000.sql.gz
 
 ## Notes

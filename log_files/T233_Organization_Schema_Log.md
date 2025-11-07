@@ -36,9 +36,9 @@ From `tasks.md` (lines 3907-3912):
   export const siteConfig = {
     name: 'Mystic Ecommerce',
     description: 'Your premier destination for spiritual growth...',
-    url: 'https://mystic-ecom.pages.dev',
-    logo: 'https://mystic-ecom.pages.dev/logo.png',
-    email: 'contact@mystic-ecom.com',
+    url: 'https://mystic-ecom-cloud.pages.dev',
+    logo: 'https://mystic-ecom-cloud.pages.dev/logo.png',
+    email: 'contact@mystic-ecom-cloud.com',
     telephone: undefined,
     foundingDate: '2024-01-01',
     founder: {
@@ -57,7 +57,7 @@ From `tasks.md` (lines 3907-3912):
       title: 'Mystic Ecommerce - Spiritual Growth & Wellness',
       description: '...',
       keywords: 'spirituality, meditation, mindfulness, wellness...',
-      ogImage: 'https://mystic-ecom.pages.dev/og-image.jpg',
+      ogImage: 'https://mystic-ecom-cloud.pages.dev/og-image.jpg',
     },
   };
   ```
@@ -239,10 +239,10 @@ export function getOrganizationData(): Omit<OrganizationSchema, '@type'> {
   "@context": "https://schema.org",
   "@type": "Organization",
   "name": "Mystic Ecommerce",
-  "url": "https://mystic-ecom.pages.dev",
-  "logo": "https://mystic-ecom.pages.dev/logo.png",
+  "url": "https://mystic-ecom-cloud.pages.dev",
+  "logo": "https://mystic-ecom-cloud.pages.dev/logo.png",
   "description": "...",
-  "email": "contact@mystic-ecom.com",
+  "email": "contact@mystic-ecom-cloud.com",
   "sameAs": [
     "https://facebook.com/mysticecommerce",
     "https://twitter.com/mysticecommerce",
@@ -416,8 +416,8 @@ export const siteConfig = {
 ```
 ✓ Organization detected
   - name: Mystic Ecommerce
-  - url: https://mystic-ecom.pages.dev
-  - logo: https://mystic-ecom.pages.dev/logo.png
+  - url: https://mystic-ecom-cloud.pages.dev
+  - logo: https://mystic-ecom-cloud.pages.dev/logo.png
   - sameAs: 5 URLs
 ```
 

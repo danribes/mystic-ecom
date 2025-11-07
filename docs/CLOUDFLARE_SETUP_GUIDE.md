@@ -23,7 +23,7 @@ Total setup time: ~15 minutes
 ### Step 2: Create Your Database
 1. After login, click **"Create Project"** (or it may auto-create one)
 2. **Project settings:**
-   - Name: `mystic-ecom-prod` (or any name you prefer)
+   - Name: `mystic-ecom-cloud-prod` (or any name you prefer)
    - Region: Choose closest to your users (e.g., US East, EU West)
    - PostgreSQL version: **16** (latest)
 3. Click **"Create Project"**
@@ -70,7 +70,7 @@ Replace `YOUR_NEON_CONNECTION_STRING` with the string you copied.
 ### Step 2: Create Redis Database
 1. After login, click **"Create Database"**
 2. **Database settings:**
-   - Name: `mystic-ecom-redis` (or any name)
+   - Name: `mystic-ecom-cloud-redis` (or any name)
    - Type: **Regional** (cheaper) or **Global** (faster)
    - Region: Choose same or closest to your Neon database
 3. Click **"Create"**
@@ -101,7 +101,7 @@ Copy the output (looks like: `xK9mP2nQ5rS8tV1wY4zA7bC0dE3fG6hI9jL2mN5oP8qR`)
 
 ### Step 1: Navigate to Settings
 1. Go to your Cloudflare dashboard: [https://dash.cloudflare.com](https://dash.cloudflare.com)
-2. Go to **Workers & Pages** > **mystic-ecom**
+2. Go to **Workers & Pages** > **mystic-ecom-cloud**
 3. Click the **"Settings"** tab at the top
 
 ### Step 2: Add Environment Variables
@@ -118,7 +118,7 @@ Add these variables one by one:
 | `REDIS_TOKEN` | Your Upstash REST token | From Upstash dashboard (Step 2.3) |
 | `SESSION_SECRET` | Generated random string | From Step 3 |
 | `NODE_ENV` | `production` | Type manually |
-| `BASE_URL` | `https://mystic-ecom.pages.dev` | Your Cloudflare Pages URL |
+| `BASE_URL` | `https://mystic-ecom-cloud.pages.dev` | Your Cloudflare Pages URL |
 
 #### Stripe Variables (Required for Payments)
 
@@ -180,7 +180,7 @@ git push origin main
 4. Check the **"Functions logs"** for any runtime errors
 
 ### Step 2: Test Your Site
-Visit your site: `https://mystic-ecom.pages.dev`
+Visit your site: `https://mystic-ecom-cloud.pages.dev`
 
 **Test these pages:**
 1. Home page - Should load without errors
@@ -273,7 +273,7 @@ REDIS_TOKEN=AZa1b2C3d4e5F6g7H8i9J0k...
 # Application
 SESSION_SECRET=xK9mP2nQ5rS8tV1wY4zA7bC...
 NODE_ENV=production
-BASE_URL=https://mystic-ecom.pages.dev
+BASE_URL=https://mystic-ecom-cloud.pages.dev
 
 # Stripe (use test keys for testing)
 STRIPE_SECRET_KEY=sk_test_or_live...

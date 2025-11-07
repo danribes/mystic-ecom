@@ -167,7 +167,7 @@ const courseSchema = generateCourseSchema({
 
 **Current (needs update):**
 ```javascript
-site: 'https://mystic-ecom.pages.dev'
+site: 'https://mystic-ecom-cloud.pages.dev'
 ```
 
 **After custom domain (update to):**
@@ -515,7 +515,7 @@ const breadcrumbSchema = generateBreadcrumbSchema(breadcrumbs, 'https://yourdoma
 
 ### After Launch:
 
-- [ ] Verify deployment at mystic-ecom.pages.dev
+- [ ] Verify deployment at mystic-ecom-cloud.pages.dev
 - [ ] Check all pages load correctly
 - [ ] Verify hreflang tags in browser (view source)
 - [ ] Test structured data: https://search.google.com/test/rich-results

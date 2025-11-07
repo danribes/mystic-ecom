@@ -173,12 +173,12 @@ export function generateStaticPageUrls(baseUrl: string): SitemapUrl[] {
 ```typescript
 [
   {
-    loc: 'https://mystic-ecom.pages.dev/',
+    loc: 'https://mystic-ecom-cloud.pages.dev/',
     priority: 1.0,
     changefreq: 'daily'
   },
   {
-    loc: 'https://mystic-ecom.pages.dev/courses/',
+    loc: 'https://mystic-ecom-cloud.pages.dev/courses/',
     priority: 0.9,
     changefreq: 'daily'
   },
@@ -298,12 +298,12 @@ ${xmlUrls}
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://mystic-ecom.pages.dev/</loc>
+    <loc>https://mystic-ecom-cloud.pages.dev/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://mystic-ecom.pages.dev/courses/meditation-basics/</loc>
+    <loc>https://mystic-ecom-cloud.pages.dev/courses/meditation-basics/</loc>
     <lastmod>2025-11-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -726,7 +726,7 @@ Cache-Control: public, max-age=3600
 
 ### URL
 ```
-https://mystic-ecom.pages.dev/sitemap.xml
+https://mystic-ecom-cloud.pages.dev/sitemap.xml
 ```
 
 ### Submit to Search Engines
@@ -740,7 +740,7 @@ https://mystic-ecom.pages.dev/sitemap.xml
 **Bing Webmaster Tools**:
 1. Go to Bing Webmaster Tools
 2. Navigate to "Sitemaps"
-3. Enter: `https://mystic-ecom.pages.dev/sitemap.xml`
+3. Enter: `https://mystic-ecom-cloud.pages.dev/sitemap.xml`
 4. Click "Submit"
 
 ### robots.txt Integration
@@ -750,7 +750,7 @@ Add to `/public/robots.txt`:
 User-agent: *
 Allow: /
 
-Sitemap: https://mystic-ecom.pages.dev/sitemap.xml
+Sitemap: https://mystic-ecom-cloud.pages.dev/sitemap.xml
 ```
 
 **Benefits**:

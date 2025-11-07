@@ -38,7 +38,7 @@ Before publishing to GitHub and deploying, ensure you have:
 ### Step 1: Create GitHub Repository
 
 1. Go to https://github.com/new
-2. Repository name: `mystic-ecom` ✅ (already created)
+2. Repository name: `mystic-ecom-cloud` ✅ (already created)
 3. Description: "Multilingual spirituality e-commerce platform with courses, events, and digital products"
 4. Visibility: **Private** (recommended for production code)
 5. **Do NOT** initialize with README, .gitignore, or license (we have these locally)
@@ -48,10 +48,10 @@ Before publishing to GitHub and deploying, ensure you have:
 
 ```bash
 # Add GitHub as remote origin
-git remote add origin git@github.com:danribes/mystic-ecom.git
+git remote add origin git@github.com:danribes/mystic-ecom-cloud.git
 
 # Or with HTTPS
-git remote add origin https://github.com/danribes/mystic-ecom.git
+git remote add origin https://github.com/danribes/mystic-ecom-cloud.git
 
 # Verify remote
 git remote -v
@@ -128,7 +128,7 @@ git push
 
 ### Step 6: Verify Upload
 
-1. Go to https://github.com/danribes/mystic-ecom
+1. Go to https://github.com/danribes/mystic-ecom-cloud
 2. Verify all files are present
 3. Check that sensitive files (.env, credentials) are NOT uploaded
 
@@ -267,8 +267,8 @@ sudo apt update
 sudo apt install -y nodejs npm postgresql nginx certbot python3-certbot-nginx
 
 # Clone repository
-git clone https://github.com/danribes/mystic-ecom.git
-cd mystic-ecom
+git clone https://github.com/danribes/mystic-ecom-cloud.git
+cd mystic-ecom-cloud
 
 # Install Node modules
 npm install
@@ -282,15 +282,15 @@ npm run build
 
 # Setup PM2 for process management
 npm install -g pm2
-pm2 start npm --name "mystic-ecom" -- start
+pm2 start npm --name "mystic-ecom-cloud" -- start
 pm2 startup
 pm2 save
 
 # Configure Nginx (see Nginx config below)
-sudo nano /etc/nginx/sites-available/mystic-ecom
+sudo nano /etc/nginx/sites-available/mystic-ecom-cloud
 
 # Enable site
-sudo ln -s /etc/nginx/sites-available/mystic-ecom /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/mystic-ecom-cloud /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
 

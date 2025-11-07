@@ -308,7 +308,7 @@ Status: ✅ PASSED
 | should have external documentation links | ✅ PASS | astro.build, typescriptlang.org, stripe.com |
 | should have Cloudflare dashboard link | ✅ PASS | dash.cloudflare.com |
 | should have local server URL | ✅ PASS | localhost:4321 |
-| should have GitHub repository references | ✅ PASS | danribes/mystic-ecom |
+| should have GitHub repository references | ✅ PASS | danribes/mystic-ecom-cloud |
 
 **Purpose**: Validates all external links are present.
 

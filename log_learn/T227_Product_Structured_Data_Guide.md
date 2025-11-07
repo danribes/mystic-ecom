@@ -515,7 +515,7 @@ The `<StructuredData>` component outputs:
   "@type": "Product",
   "name": "Complete Meditation Guide PDF",
   "description": "A comprehensive guide...",
-  "image": "https://mystic-ecom.pages.dev/images/guide.jpg",
+  "image": "https://mystic-ecom-cloud.pages.dev/images/guide.jpg",
   "brand": {
     "@type": "Brand",
     "name": "Spirituality Platform"
@@ -526,13 +526,13 @@ The `<StructuredData>` component outputs:
     "price": "29.99",
     "priceCurrency": "USD",
     "availability": "https://schema.org/InStock",
-    "url": "https://mystic-ecom.pages.dev/products/meditation-guide",
+    "url": "https://mystic-ecom-cloud.pages.dev/products/meditation-guide",
     "seller": {
       "@type": "Organization",
       "name": "Spirituality Platform"
     }
   },
-  "url": "https://mystic-ecom.pages.dev/products/meditation-guide"
+  "url": "https://mystic-ecom-cloud.pages.dev/products/meditation-guide"
 }
 </script>
 ```
@@ -701,7 +701,7 @@ Google requires:
   "@type": "Product",
   "name": "Complete Meditation Guide PDF",
   "description": "A comprehensive 200-page guide covering meditation techniques for beginners and advanced practitioners. Includes breathing exercises, mindfulness practices, and daily routines.",
-  "image": "https://mystic-ecom.pages.dev/images/meditation-guide.jpg",
+  "image": "https://mystic-ecom-cloud.pages.dev/images/meditation-guide.jpg",
   "brand": {
     "@type": "Brand",
     "name": "Spirituality Platform"
@@ -712,7 +712,7 @@ Google requires:
     "price": "29.99",
     "priceCurrency": "USD",
     "availability": "https://schema.org/InStock",
-    "url": "https://mystic-ecom.pages.dev/products/meditation-guide"
+    "url": "https://mystic-ecom-cloud.pages.dev/products/meditation-guide"
   }
 }
 ```
@@ -743,7 +743,7 @@ A comprehensive 200-page guide covering meditation techniques...
   "@type": "Product",
   "name": "Mindfulness Audio Course",
   "description": "Learn mindfulness through 20 guided audio lessons. Each lesson is 15-30 minutes, perfect for daily practice.",
-  "image": "https://mystic-ecom.pages.dev/images/audio-course.jpg",
+  "image": "https://mystic-ecom-cloud.pages.dev/images/audio-course.jpg",
   "brand": {
     "@type": "Organization",
     "name": "Spirituality Platform"
@@ -761,7 +761,7 @@ A comprehensive 200-page guide covering meditation techniques...
     "price": "49.99",
     "priceCurrency": "USD",
     "availability": "https://schema.org/InStock",
-    "url": "https://mystic-ecom.pages.dev/products/audio-course",
+    "url": "https://mystic-ecom-cloud.pages.dev/products/audio-course",
     "seller": {
       "@type": "Organization",
       "name": "Spirituality Platform"
@@ -795,7 +795,7 @@ Learn mindfulness through 20 guided audio lessons...
   "@type": "Product",
   "name": "Free Meditation Starter Guide",
   "description": "Get started with meditation - completely free. A 20-page guide for absolute beginners.",
-  "image": "https://mystic-ecom.pages.dev/images/free-guide.jpg",
+  "image": "https://mystic-ecom-cloud.pages.dev/images/free-guide.jpg",
   "brand": {
     "@type": "Brand",
     "name": "Spirituality Platform"
@@ -806,7 +806,7 @@ Learn mindfulness through 20 guided audio lessons...
     "price": "0.00",
     "priceCurrency": "USD",
     "availability": "https://schema.org/InStock",
-    "url": "https://mystic-ecom.pages.dev/products/free-starter-guide"
+    "url": "https://mystic-ecom-cloud.pages.dev/products/free-starter-guide"
   }
 }
 ```

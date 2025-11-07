@@ -425,8 +425,8 @@ All tests passed on first execution. No bugs or issues detected during test deve
 ```
 ✓ Organization detected
   name: "Mystic Ecommerce"
-  url: "https://mystic-ecom.pages.dev"
-  logo: "https://mystic-ecom.pages.dev/logo.png"
+  url: "https://mystic-ecom-cloud.pages.dev"
+  logo: "https://mystic-ecom-cloud.pages.dev/logo.png"
   sameAs: 5 URLs (social media profiles)
   foundingDate: "2024-01-01"
 ```
@@ -447,10 +447,10 @@ All tests passed on first execution. No bugs or issues detected during test deve
   "@context": "https://schema.org",
   "@type": "Organization",
   "name": "Mystic Ecommerce",
-  "url": "https://mystic-ecom.pages.dev",
-  "logo": "https://mystic-ecom.pages.dev/logo.png",
+  "url": "https://mystic-ecom-cloud.pages.dev",
+  "logo": "https://mystic-ecom-cloud.pages.dev/logo.png",
   "description": "Your premier destination for spiritual growth, mindfulness, and holistic wellness. Discover transformative courses, events, and products.",
-  "email": "contact@mystic-ecom.com",
+  "email": "contact@mystic-ecom-cloud.com",
   "sameAs": [
     "https://facebook.com/mysticecommerce",
     "https://twitter.com/mysticecommerce",

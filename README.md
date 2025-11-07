@@ -158,8 +158,8 @@ A production-ready, multilingual e-commerce platform for spiritual courses, live
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/danribes/mystic-ecom.git
-cd mystic-ecom
+git clone https://github.com/danribes/mystic-ecom-cloud.git
+cd mystic-ecom-cloud
 ```
 
 ### 2. Install Dependencies
@@ -921,6 +921,6 @@ Built with:
 
 ---
 
-**Need help?** Check the [documentation](docs/) or [create an issue](https://github.com/danribes/mystic-ecom/issues).
+**Need help?** Check the [documentation](docs/) or [create an issue](https://github.com/danribes/mystic-ecom-cloud/issues).
 
 **Ready to deploy?** Follow the [deployment guide](docs/CLOUDFLARE_DEPLOYMENT.md).

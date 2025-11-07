@@ -10,13 +10,13 @@
 
 #### ✅ Step 1: Neon PostgreSQL
 - [ ] Go to https://neon.tech → Sign up
-- [ ] Create project: `mystic-ecom-production`
+- [ ] Create project: `mystic-ecom-cloud-production`
 - [ ] Copy connection string (with `?sslmode=require`)
 - [ ] Save to credentials file
 
 #### ✅ Step 2: Upstash Redis
 - [ ] Go to https://upstash.com → Sign up
-- [ ] Create database: `mystic-ecom-production`
+- [ ] Create database: `mystic-ecom-cloud-production`
 - [ ] Enable TLS
 - [ ] Copy connection URL (starts with `rediss://`)
 - [ ] Save to credentials file
@@ -85,7 +85,7 @@ export DOWNLOAD_TOKEN_SECRET="generated-secret-4"
 
 1. Go to https://dash.cloudflare.com
 2. **Pages** → **Create a project** → **Connect to Git**
-3. Select repository: `danribes/mystic-ecom`
+3. Select repository: `danribes/mystic-ecom-cloud`
 4. Branch: `main` (or your preferred branch)
 
 #### B. Build Settings

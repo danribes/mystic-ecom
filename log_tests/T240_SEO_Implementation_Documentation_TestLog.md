@@ -836,7 +836,7 @@ it('should allow sitemap access', () => {
   const robots = parseRobotsFile();
 
   expect(robots.isAllowed('/sitemap.xml')).toBe(true);
-  expect(robots.getSitemapUrl()).toBe('https://mystic-ecom.pages.dev/sitemap.xml');
+  expect(robots.getSitemapUrl()).toBe('https://mystic-ecom-cloud.pages.dev/sitemap.xml');
 });
 
 it('should block admin areas', () => {
@@ -1493,7 +1493,7 @@ npm test -- tests/unit/T229_sitemap_generation.test.ts
 npm run seo:audit
 
 # Audit specific URL
-npm run seo:audit -- --url https://mystic-ecom.pages.dev/courses/meditation
+npm run seo:audit -- --url https://mystic-ecom-cloud.pages.dev/courses/meditation
 
 # Generate detailed report
 npm run seo:audit -- --detailed --output seo-report.json

@@ -103,7 +103,7 @@ Then rendered it using the StructuredData component (line 116):
   - If image URL starts with `http`, use as-is (absolute URL)
   - If relative path, prepend site URL
   - If no image, fallback to default OG image
-- **Example**: "https://mystic-ecom.pages.dev/images/product.jpg"
+- **Example**: "https://mystic-ecom-cloud.pages.dev/images/product.jpg"
 
 #### Brand
 - **Fixed Value**: "Spirituality Platform"
@@ -135,7 +135,7 @@ Then rendered it using the StructuredData component (line 116):
 - **Source**: `product.slug`
 - **Schema Field**: `url` and `offers.url`
 - **Format**: `{siteUrl}/products/{slug}`
-- **Example**: "https://mystic-ecom.pages.dev/products/meditation-guide"
+- **Example**: "https://mystic-ecom-cloud.pages.dev/products/meditation-guide"
 
 #### Seller
 - **Fixed Value**: "Spirituality Platform"
@@ -151,7 +151,7 @@ Then rendered it using the StructuredData component (line 116):
   "@type": "Product",
   "name": "Complete Meditation Guide PDF",
   "description": "A 200-page comprehensive guide to meditation practices",
-  "image": "https://mystic-ecom.pages.dev/images/meditation-guide.jpg",
+  "image": "https://mystic-ecom-cloud.pages.dev/images/meditation-guide.jpg",
   "brand": {
     "@type": "Brand",
     "name": "Spirituality Platform"
@@ -162,13 +162,13 @@ Then rendered it using the StructuredData component (line 116):
     "price": "29.99",
     "priceCurrency": "USD",
     "availability": "https://schema.org/InStock",
-    "url": "https://mystic-ecom.pages.dev/products/meditation-guide",
+    "url": "https://mystic-ecom-cloud.pages.dev/products/meditation-guide",
     "seller": {
       "@type": "Organization",
       "name": "Spirituality Platform"
     }
   },
-  "url": "https://mystic-ecom.pages.dev/products/meditation-guide"
+  "url": "https://mystic-ecom-cloud.pages.dev/products/meditation-guide"
 }
 ```
 

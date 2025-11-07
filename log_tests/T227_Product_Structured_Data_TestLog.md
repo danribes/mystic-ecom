@@ -775,7 +775,7 @@ Automated validation:
 describe('Google Rich Results', () => {
   it('should pass Google Rich Results Test', async () => {
     // Use Google's API to validate
-    const url = 'https://mystic-ecom.pages.dev/products/test';
+    const url = 'https://mystic-ecom-cloud.pages.dev/products/test';
     const result = await validateWithGoogle(url);
 
     expect(result.valid).toBe(true);

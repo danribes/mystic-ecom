@@ -26,7 +26,7 @@ Before starting, ensure you have:
 
 1. Go to https://neon.tech and sign in
 2. Click "Create Project"
-3. Name it: `mystic-ecom-production`
+3. Name it: `mystic-ecom-cloud-production`
 4. Select region closest to your users
 5. Copy your connection string (it includes `?sslmode=require`)
 6. Import your database schema:
@@ -39,7 +39,7 @@ Before starting, ensure you have:
 
 1. Go to https://upstash.com and sign in
 2. Click "Create Database"
-3. Name it: `mystic-ecom-production`
+3. Name it: `mystic-ecom-cloud-production`
 4. Select region closest to your users
 5. Enable TLS
 6. Copy the Redis connection URL (starts with `rediss://`)
@@ -67,7 +67,7 @@ Before starting, ensure you have:
 2. Click "Pages" in the left sidebar
 3. Click "Create a project"
 4. Click "Connect to Git"
-5. Select your GitHub repository: `mystic-ecom`
+5. Select your GitHub repository: `mystic-ecom-cloud`
 6. Click "Begin setup"
 
 #### B. Configure Build Settings
@@ -147,7 +147,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 1. Cloudflare will start building your project
 2. Watch the build logs for any errors
 3. Build should complete in 2-5 minutes
-4. You'll get a URL like: `https://mystic-ecom-abc.pages.dev`
+4. You'll get a URL like: `https://mystic-ecom-cloud-abc.pages.dev`
 
 ---
 
@@ -198,7 +198,7 @@ Visit your site and test:
 1. In Cloudflare Pages → Your Project
 2. Click "Custom domains"
 3. Click "Set up a custom domain"
-4. Enter your domain (e.g., `mystic-ecom.com`)
+4. Enter your domain (e.g., `mystic-ecom-cloud.com`)
 5. Follow DNS configuration instructions
 6. Wait for SSL certificate to provision (automatic)
 7. Update `PUBLIC_SITE_URL` environment variable to your custom domain

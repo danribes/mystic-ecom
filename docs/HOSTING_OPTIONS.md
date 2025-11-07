@@ -48,7 +48,7 @@ npm run build
 2. **Connect to GitHub:**
    - Click "Connect to Git"
    - Authorize Cloudflare
-   - Select repository: `danribes/mystic-ecom`
+   - Select repository: `danribes/mystic-ecom-cloud`
 
 3. **Configure Build Settings:**
    ```
@@ -78,7 +78,7 @@ npm run build
 5. **Deploy:**
    - Click "Save and Deploy"
    - Wait 2-3 minutes for build
-   - Get your URL: `https://mystic-ecom.pages.dev`
+   - Get your URL: `https://mystic-ecom-cloud.pages.dev`
 
 #### 3. Custom Domain (Optional)
 
@@ -139,7 +139,7 @@ import vercel from '@astrojs/vercel/serverless';
 import tailwind from '@astrojs/tailwind';
 
 export default defineConfig({
-  site: 'https://mystic-ecom.vercel.app',
+  site: 'https://mystic-ecom-cloud.vercel.app',
   output: 'server',
   adapter: vercel(),
   integrations: [tailwind({ applyBaseStyles: false })],
@@ -150,7 +150,7 @@ export default defineConfig({
 
 **Option A: Via Website**
 1. Go to https://vercel.com/new
-2. Import from GitHub: `danribes/mystic-ecom`
+2. Import from GitHub: `danribes/mystic-ecom-cloud`
 3. Add environment variables
 4. Deploy
 
@@ -234,8 +234,8 @@ GRANT ALL PRIVILEGES ON DATABASE mystic_ecom TO mystic_user;
 ```bash
 # Clone your repository
 cd /var/www
-git clone https://github.com/danribes/mystic-ecom.git
-cd mystic-ecom
+git clone https://github.com/danribes/mystic-ecom-cloud.git
+cd mystic-ecom-cloud
 
 # Install dependencies
 npm install
@@ -272,7 +272,7 @@ psql $DATABASE_URL < database/schema.sql
 npm run build
 
 # Start with PM2
-pm2 start npm --name "mystic-ecom" -- start
+pm2 start npm --name "mystic-ecom-cloud" -- start
 pm2 startup
 pm2 save
 ```
@@ -280,7 +280,7 @@ pm2 save
 #### 8. Configure Nginx as Reverse Proxy
 
 ```bash
-nano /etc/nginx/sites-available/mystic-ecom
+nano /etc/nginx/sites-available/mystic-ecom-cloud
 ```
 
 Paste this configuration:
@@ -305,7 +305,7 @@ server {
 
 Enable the site:
 ```bash
-ln -s /etc/nginx/sites-available/mystic-ecom /etc/nginx/sites-enabled/
+ln -s /etc/nginx/sites-available/mystic-ecom-cloud /etc/nginx/sites-enabled/
 nginx -t
 systemctl restart nginx
 ```
@@ -320,16 +320,16 @@ certbot --nginx -d yourdomain.com -d www.yourdomain.com
 
 Create a deploy script:
 ```bash
-nano /var/www/mystic-ecom/deploy.sh
+nano /var/www/mystic-ecom-cloud/deploy.sh
 ```
 
 ```bash
 #!/bin/bash
-cd /var/www/mystic-ecom
+cd /var/www/mystic-ecom-cloud
 git pull origin main
 npm install
 npm run build
-pm2 restart mystic-ecom
+pm2 restart mystic-ecom-cloud
 ```
 
 Make it executable:
@@ -341,15 +341,15 @@ chmod +x deploy.sh
 
 **Start/Stop Application:**
 ```bash
-pm2 start mystic-ecom
-pm2 stop mystic-ecom
-pm2 restart mystic-ecom
-pm2 logs mystic-ecom
+pm2 start mystic-ecom-cloud
+pm2 stop mystic-ecom-cloud
+pm2 restart mystic-ecom-cloud
+pm2 logs mystic-ecom-cloud
 ```
 
 **Update Application:**
 ```bash
-cd /var/www/mystic-ecom
+cd /var/www/mystic-ecom-cloud
 ./deploy.sh
 ```
 

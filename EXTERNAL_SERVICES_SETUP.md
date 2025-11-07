@@ -32,7 +32,7 @@ You need to set up 4 external services:
 1. Click **"New Project"** or **"Create a project"**
 2. Fill in details:
    ```
-   Project Name: mystic-ecom-production
+   Project Name: mystic-ecom-cloud-production
    Database Name: main
    PostgreSQL Version: 16 (latest)
    Region: Choose closest to your users
@@ -112,7 +112,7 @@ You'll need these later:
 1. Click **"Create Database"**
 2. Fill in details:
    ```
-   Name: mystic-ecom-production
+   Name: mystic-ecom-cloud-production
    Type: Regional (faster, recommended)
    Region: Same as your Neon database
    TLS: Enabled (REQUIRED - should be enabled by default)
@@ -242,7 +242,7 @@ While you're here, also copy your **Test mode** keys for local development:
 2. Click **"Create API Key"**
 3. Fill in details:
    ```
-   Name: mystic-ecom-production
+   Name: mystic-ecom-cloud-production
    Permission: Full Access (or Sending access)
    ```
 4. Click **"Create"**
@@ -266,7 +266,7 @@ While you're here, also copy your **Test mode** keys for local development:
 
 1. Go to **"Domains"** in left sidebar
 2. Click **"Add Domain"**
-3. Enter your domain (e.g., `mystic-ecom.com`)
+3. Enter your domain (e.g., `mystic-ecom-cloud.com`)
 4. Click **"Add"**
 5. Add DNS records shown by Resend to your domain's DNS settings
 6. Wait for verification (usually 5-30 minutes)

@@ -421,10 +421,10 @@ https://www.highervisibility.com/seo/tools/serp-snippet-optimizer/
   "@context": "https://schema.org",
   "@type": "WebSite",
   "name": "Spirituality Platform",
-  "url": "https://mystic-ecom.pages.dev",
+  "url": "https://mystic-ecom-cloud.pages.dev",
   "potentialAction": {
     "@type": "SearchAction",
-    "target": "https://mystic-ecom.pages.dev/search?q={search_term}",
+    "target": "https://mystic-ecom-cloud.pages.dev/search?q={search_term}",
     "query-input": "required name=search_term"
   }
 }
@@ -438,8 +438,8 @@ https://www.highervisibility.com/seo/tools/serp-snippet-optimizer/
   "@context": "https://schema.org",
   "@type": "Organization",
   "name": "Spirituality Platform",
-  "url": "https://mystic-ecom.pages.dev",
-  "logo": "https://mystic-ecom.pages.dev/logo.png",
+  "url": "https://mystic-ecom-cloud.pages.dev",
+  "logo": "https://mystic-ecom-cloud.pages.dev/logo.png",
   "contactPoint": {
     "@type": "ContactPoint",
     "telephone": "+1-555-0100",
@@ -492,7 +492,7 @@ https://www.highervisibility.com/seo/tools/serp-snippet-optimizer/
 
 **Implementation** (Automatic in our platform):
 ```html
-<link rel="canonical" href="https://mystic-ecom.pages.dev/courses/meditation/" />
+<link rel="canonical" href="https://mystic-ecom-cloud.pages.dev/courses/meditation/" />
 ```
 
 **Rules**:
@@ -544,7 +544,7 @@ Disallow: /auth/
 
 Allow: /api/health
 
-Sitemap: https://mystic-ecom.pages.dev/sitemap.xml
+Sitemap: https://mystic-ecom-cloud.pages.dev/sitemap.xml
 ```
 
 **What This Does**:
@@ -553,7 +553,7 @@ Sitemap: https://mystic-ecom.pages.dev/sitemap.xml
 - Blocks API endpoints (except health check)
 - Tells bots where to find sitemap
 
-**Testing**: https://mystic-ecom.pages.dev/robots.txt
+**Testing**: https://mystic-ecom-cloud.pages.dev/robots.txt
 
 #### URL Structure
 
@@ -561,9 +561,9 @@ Sitemap: https://mystic-ecom.pages.dev/sitemap.xml
 
 ✅ **Good URL Structure**:
 ```
-https://mystic-ecom.pages.dev/courses/beginner-meditation/
-https://mystic-ecom.pages.dev/events/full-moon-ceremony/
-https://mystic-ecom.pages.dev/products/meditation-cushion/
+https://mystic-ecom-cloud.pages.dev/courses/beginner-meditation/
+https://mystic-ecom-cloud.pages.dev/events/full-moon-ceremony/
+https://mystic-ecom-cloud.pages.dev/products/meditation-cushion/
 ```
 
 **Why It's Good**:
@@ -576,9 +576,9 @@ https://mystic-ecom.pages.dev/products/meditation-cushion/
 
 ❌ **Bad URL Structure**:
 ```
-https://mystic-ecom.pages.dev/course.php?id=123
-https://mystic-ecom.pages.dev/Events_And_Workshops
-https://mystic-ecom.pages.dev/p?pid=456&cat=meditation&sort=price
+https://mystic-ecom-cloud.pages.dev/course.php?id=123
+https://mystic-ecom-cloud.pages.dev/Events_And_Workshops
+https://mystic-ecom-cloud.pages.dev/p?pid=456&cat=meditation&sort=price
 ```
 
 **Why It's Bad**:

@@ -348,7 +348,7 @@ Allow: /api/health
 Allow: /api/sitemap
 
 # Sitemap location
-Sitemap: https://mystic-ecom.pages.dev/sitemap.xml
+Sitemap: https://mystic-ecom-cloud.pages.dev/sitemap.xml
 
 # Crawl delay (optional, for rate limiting)
 Crawl-delay: 1
@@ -482,8 +482,8 @@ generateSlug("Café de la Paix: français")
 {
   "@type": "Organization",
   "name": "Spirituality Platform",
-  "url": "https://mystic-ecom.pages.dev",
-  "logo": "https://mystic-ecom.pages.dev/images/logo.png",
+  "url": "https://mystic-ecom-cloud.pages.dev",
+  "logo": "https://mystic-ecom-cloud.pages.dev/images/logo.png",
   "description": "Online platform for spiritual growth...",
   "contactPoint": {
     "@type": "ContactPoint",
@@ -1231,7 +1231,7 @@ SEO tracking with Google Analytics:
 
 ```env
 # Site Configuration
-PUBLIC_SITE_URL=https://mystic-ecom.pages.dev
+PUBLIC_SITE_URL=https://mystic-ecom-cloud.pages.dev
 PUBLIC_SITE_NAME="Spirituality Platform"
 
 # Google Search Console Integration
@@ -1258,7 +1258,7 @@ export const siteConfig = {
   name: "Spirituality Platform",
   title: "Spirituality Platform | Online Spiritual Growth",
   description: "Discover spiritual growth through online courses...",
-  url: "https://mystic-ecom.pages.dev",
+  url: "https://mystic-ecom-cloud.pages.dev",
   logo: "/images/logo.png",
   ogImage: "/images/og-default.jpg",
   locale: "en_US",
@@ -1292,7 +1292,7 @@ npm test -- tests/unit/T229_sitemap_generation.test.ts
 npm run seo:audit
 
 # Audit specific URL
-npm run seo:audit -- --url https://mystic-ecom.pages.dev/courses/meditation
+npm run seo:audit -- --url https://mystic-ecom-cloud.pages.dev/courses/meditation
 ```
 
 ### Validate Structured Data
@@ -1303,20 +1303,20 @@ npm run seo:audit -- --url https://mystic-ecom.pages.dev/courses/meditation
 - https://validator.schema.org/
 
 # Test specific page
-curl https://mystic-ecom.pages.dev/courses/meditation-basics | grep "@type"
+curl https://mystic-ecom-cloud.pages.dev/courses/meditation-basics | grep "@type"
 ```
 
 ### Check Sitemap
 
 ```bash
 # View sitemap
-curl https://mystic-ecom.pages.dev/sitemap.xml
+curl https://mystic-ecom-cloud.pages.dev/sitemap.xml
 
 # Validate sitemap
-curl https://mystic-ecom.pages.dev/sitemap.xml | xmllint --format -
+curl https://mystic-ecom-cloud.pages.dev/sitemap.xml | xmllint --format -
 
 # Check URL count
-curl https://mystic-ecom.pages.dev/sitemap.xml | grep -c "<loc>"
+curl https://mystic-ecom-cloud.pages.dev/sitemap.xml | grep -c "<loc>"
 ```
 
 ---
